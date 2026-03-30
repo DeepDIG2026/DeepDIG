@@ -368,9 +368,24 @@ def test():
                 # Save binarized prediction results
                 if args.save_pred:
                     pred_save = (preditem * 255).astype(np.uint8)
-                    save_name = sample_path.replace('/', '_').replace('\\', '_')
-                    save_name = os.path.splitext(save_name)[0] + '.png'
-                    cv2.imwrite(os.path.join(args.output_dir, 'predictions', save_name), pred_save)
+                    # Keep a one-to-one naming/path mapping with dataset masks.
+                    dataset_root = os.path.join(args.root, args.dataset)
+                    masks_root = os.path.join(dataset_root, 'masks')
+
+                    normalized_gt = os.path.normpath(full_gt_path)
+                    normalized_masks_root = os.path.normpath(masks_root)
+
+                    if normalized_gt.startswith(normalized_masks_root + os.sep):
+                        rel_mask_path = os.path.relpath(normalized_gt, normalized_masks_root)
+                        pred_save_path = os.path.join(args.output_dir, 'predictions', rel_mask_path)
+                    else:
+                        parts = sample_path.replace('\\', '/').split('/')
+                        seq_id = parts[-2] if len(parts) >= 2 else ''
+                        frame_name = os.path.splitext(parts[-1])[0] + '.png'
+                        pred_save_path = os.path.join(args.output_dir, 'predictions', seq_id, frame_name)
+
+                    os.makedirs(os.path.dirname(pred_save_path), exist_ok=True)
+                    cv2.imwrite(pred_save_path, pred_save)
                 
                 # Save pseudo-color heatmap
                 if args.save_heatmap:

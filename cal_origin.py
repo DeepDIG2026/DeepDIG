@@ -538,9 +538,9 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser('从保存结果计算指标（完全使用model/metric.py方法）')
-    parser.add_argument('--pred_dir', type=str, default='/home/lihaixin/STDMANet-bupt/output/TSIRMT/AccumulatedKernel_MotionGate/binary',
+    parser.add_argument('--pred_dir', type=str, default='/mnt/c/Users/admin/Desktop/DeepDIG_v3/result/TSIRMT/test_0330-1330/predictions',
                        help='预测结果目录（留空则自动设置）')
-    parser.add_argument('--dataset_root', type=str, default='/home/lihaixin/STDMANet-bupt/dataset/TSIRMT',
+    parser.add_argument('--dataset_root', type=str, default='/mnt/c/Users/admin/Desktop/STDMANet-bupt/dataset/TSIRMT',
                        help='数据集根目录（留空则自动设置）')
     parser.add_argument('--use_logits', action='store_true', default=False,
                        help='使用logits（热图）而不是bin_mask')
