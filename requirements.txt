@@ -1,0 +1,16 @@
+# Runtime dependencies for DeepDIG (inference/testing).
+# Note: `torch` is typically provided by your conda env (e.g., `STDMANet`).
+
+numpy
+opencv-python
+pillow
+tqdm
+scikit-learn
+scikit-image
+matplotlib
+imutils
+kornia
+
+# Optional (used only for FLOPs/GFLOPs reporting; code will skip if missing)
+thop
+
