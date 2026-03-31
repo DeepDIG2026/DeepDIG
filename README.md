@@ -38,7 +38,7 @@ The core innovations include:
 </p>
 
 
-## Datasets
+## Dataset
 We introduce a new Large-motion Multi-frame IRST Detection (LMIRSTD) dataset, specifically designed to evaluate multi-frame methods under pronounced background motion. LMIRSTD comprises 60 real-world infrared video sequences, each containing 200 frames at a resolution of 640×512. The dataset spans diverse natural and urban scenes across different seasons and illumination conditions (daytime and nighttime), and features strong background motion induced by camera translation and jitter. Moreover, LMIRSTD exhibits a balanced distribution of target scales, with large ([9², ∞)), medium ([5², 9²)), and small ([1², 5²)) targets accounting for 17.4%, 50.6%, and 32%, respectively. By explicitly emphasizing large background motion and long-term temporal dynamics, LMIRSTD provides a more realistic and challenging benchmark for multi-frame IRST detection. The key characteristics of all datasets used in this work are summarized in Table 1. The dataset can be downloaded [here](https://drive.google.com/drive/folders/1tv9GhDs2jT7N_RRtqT8z2lzg-IpnqTfL?usp=sharing).
 
 
@@ -54,7 +54,7 @@ We introduce a new Large-motion Multi-frame IRST Detection (LMIRSTD) dataset, sp
   <em>Table 1: Details about LMIRSTD Dataset.</em>
 </p>
 
-<p align="center">
+<div align="center">
 <table style="border-collapse: collapse; border: none;">
 <tr style="border: none;">
 <td align="center" style="border: none;">
@@ -85,10 +85,8 @@ We introduce a new Large-motion Multi-frame IRST Detection (LMIRSTD) dataset, sp
 </td>
 </tr>
 </table>
-<br>
-<em>Figure 5: Illustration of samples from our constructed LMIRSTD Dataset.</em>
-<br>
-</p>
+<p align="center"><em>Figure 5: Illustration of samples from our constructed LMIRSTD Dataset.</em></p>
+</div>
 
 
 
