@@ -1,6 +1,6 @@
-# DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better
+<h1 align="center">DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better</h1>
 
-Project page for the manuscript prepared for **IEEE Transactions on Multimedia (TMM)**.
+<p align="center">Project page for the manuscript prepared for <strong>IEEE Transactions on Multimedia (TMM)</strong>.</p>
 
 DeepDIG detects small infrared targets in video sequences with significant camera-induced background motion. The current manuscript describes three components:
 
@@ -12,27 +12,45 @@ The repository currently contains an earlier inference implementation. Its tempo
 
 ## Method
 
-![DeepDIG architecture](assets/architecture_tmm.png)
+<p align="center">
+  <img src="assets/architecture_tmm.png" alt="DeepDIG architecture" width="900">
+</p>
 
 The aligned sequence is processed by static, difference, and dynamic paths before MAG fuses their features for detection.
 
-| Reliability-aware aggregation | Content-adaptive convolution |
-| --- | --- |
-| ![RATA module](assets/rata_tmm.png) | ![CADC module](assets/cadc_tmm.png) |
+<table align="center">
+  <tr>
+    <th align="center">Reliability-aware aggregation</th>
+    <th align="center">Content-adaptive convolution</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/rata_tmm.png" alt="RATA module" width="430"></td>
+    <td align="center"><img src="assets/cadc_tmm.png" alt="CADC module" width="430"></td>
+  </tr>
+</table>
 
-![MAG module](assets/mag_tmm.png)
+<p align="center">
+  <img src="assets/mag_tmm.png" alt="MAG module" width="850">
+</p>
 
 ## LMIRSTD Dataset
 
 LMIRSTD contains **60 infrared video sequences**: 45 for training and 15 for testing. Each sequence has 200 frames at **640 x 512** resolution, for 12,000 frames in total. It includes dim targets and pronounced background motion across sky, urban, forest, mountain, and lake scenes. Its mean signal-to-clutter ratio (SCR) is 2.25 in the current manuscript.
 
-![Example LMIRSTD scenes](assets/dataset_tmm.png)
+<p align="center">
+  <img src="assets/dataset_tmm.png" alt="Example LMIRSTD scenes" width="1000">
+</p>
 
-| Dataset | Mean SCR | Background motion |
-| --- | ---: | --- |
-| IRDST | 6.70 | Large |
-| TSIRMT | 3.04 | Mild |
-| LMIRSTD | 2.25 | Large |
+<table align="center">
+  <thead>
+    <tr><th>Dataset</th><th>Mean SCR</th><th>Background motion</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>IRDST</td><td align="center">6.70</td><td>Large</td></tr>
+    <tr><td>TSIRMT</td><td align="center">3.04</td><td>Mild</td></tr>
+    <tr><td>LMIRSTD</td><td align="center">2.25</td><td>Large</td></tr>
+  </tbody>
+</table>
 
 The LMIRSTD dataset is available from the [dataset folder](https://drive.google.com/drive/folders/1tv9GhDs2jT7N_RRtqT8z2lzg-IpnqTfL?usp=sharing).
 
@@ -40,15 +58,22 @@ The LMIRSTD dataset is available from the [dataset folder](https://drive.google.
 
 The following values are from the current TMM manuscript's quantitative comparison table. `Fa` is reported in units of `10^-6`; the other metrics are percentages.
 
-| Dataset | Pd | Fa | IoU | nIoU | F1 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| IRDST | 99.18 | 11.30 | 65.94 | 66.55 | 98.37 |
-| TSIRMT | 94.17 | 35.55 | 73.06 | 73.95 | 95.11 |
-| LMIRSTD | 91.03 | 2.81 | 75.26 | 74.80 | 87.10 |
+<table align="center">
+  <thead>
+    <tr><th>Dataset</th><th>Pd</th><th>Fa</th><th>IoU</th><th>nIoU</th><th>F1</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>IRDST</td><td align="center">99.18</td><td align="center">11.30</td><td align="center">65.94</td><td align="center">66.55</td><td align="center">98.37</td></tr>
+    <tr><td>TSIRMT</td><td align="center">94.17</td><td align="center">35.55</td><td align="center">73.06</td><td align="center">73.95</td><td align="center">95.11</td></tr>
+    <tr><td>LMIRSTD</td><td align="center">91.03</td><td align="center">2.81</td><td align="center">75.26</td><td align="center">74.80</td><td align="center">87.10</td></tr>
+  </tbody>
+</table>
 
 The manuscript reports **9.15 FPS**, **15.21M parameters**, and **33.14 GFLOPs** for the full DeepDIG pipeline at 256 x 256 input resolution on an NVIDIA RTX 4090D. FPS includes background alignment and inference.
 
-![Qualitative comparison from the TMM manuscript](assets/comparison_tmm.png)
+<p align="center">
+  <img src="assets/comparison_tmm.png" alt="Qualitative comparison from the TMM manuscript" width="1000">
+</p>
 
 ## Inference With the Currently Published Code
 
