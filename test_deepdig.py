@@ -5,15 +5,15 @@ Test DeepDIG model for infrared small target detection.
 
 Usage examples:
     python test_deepdig.py \
-        --ckpt ./weights/TSIRMT_IoU_0.7317.pth \
-        --root /mnt/c/Users/admin/Desktop/STDMANet-bupt/dataset \
+        --ckpt ./weights/YOUR_CHECKPOINT.pth \
+        --root ./dataset \
         --dataset TSIRMT \
         --save_pred
 
 
     python test_deepdig.py \
-            --ckpt ./weights/IRDST_IoU_0.6565.pth \
-            --root /mnt/c/Users/admin/Desktop/STDMANet-bupt/dataset \
+            --ckpt ./weights/YOUR_CHECKPOINT.pth \
+            --root ./dataset \
             --dataset IRDST \
             --save_pred
 
@@ -21,8 +21,8 @@ Usage examples:
 
     
     python test_deepdig.py \
-        --ckpt  ./weights/LMIRSTD_IoU_0.7624.pth \
-        --root /mnt/c/Users/admin/Desktop/STDMANet-bupt/dataset \
+        --ckpt ./weights/YOUR_CHECKPOINT.pth \
+        --root ./dataset \
         --dataset LMIRSTD \
         --save_pred
 """
