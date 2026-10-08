@@ -56,18 +56,43 @@ The LMIRSTD dataset is available from the [dataset folder](https://drive.google.
 
 ## Manuscript Results
 
-The following values are from the current TMM manuscript's quantitative comparison table. `Fa` is reported in units of `10^-6`; the other metrics are percentages.
+The full quantitative comparison is shown below. `Fa` is reported in units of `10^-6`; all other metrics are percentages. The best result for each dataset and metric is shown in **bold**. OSFormer reports only F1 in its original paper.
 
-<table align="center">
+<div align="center">
+<table>
   <thead>
-    <tr><th>Dataset</th><th>Pd</th><th>Fa</th><th>IoU</th><th>nIoU</th><th>F1</th></tr>
+    <tr>
+      <th rowspan="2">Type</th>
+      <th rowspan="2">Method</th>
+      <th colspan="5">IRDST</th>
+      <th colspan="5">TSIRMT</th>
+      <th colspan="5">LMIRSTD</th>
+    </tr>
+    <tr>
+      <th>Pd ↑</th><th>Fa ↓</th><th>IoU ↑</th><th>nIoU ↑</th><th>F1 ↑</th>
+      <th>Pd ↑</th><th>Fa ↓</th><th>IoU ↑</th><th>nIoU ↑</th><th>F1 ↑</th>
+      <th>Pd ↑</th><th>Fa ↓</th><th>IoU ↑</th><th>nIoU ↑</th><th>F1 ↑</th>
+    </tr>
   </thead>
   <tbody>
-    <tr><td>IRDST</td><td align="center">99.18</td><td align="center">11.30</td><td align="center">65.94</td><td align="center">66.55</td><td align="center">98.37</td></tr>
-    <tr><td>TSIRMT</td><td align="center">94.17</td><td align="center">35.55</td><td align="center">73.06</td><td align="center">73.95</td><td align="center">95.11</td></tr>
-    <tr><td>LMIRSTD</td><td align="center">91.03</td><td align="center">2.81</td><td align="center">75.26</td><td align="center">74.80</td><td align="center">87.10</td></tr>
+    <tr><td rowspan="8">Single frame</td><td>U-Net</td><td>96.88</td><td>19.69</td><td>55.26</td><td>56.94</td><td>92.78</td><td>77.37</td><td>384.12</td><td>58.42</td><td>60.20</td><td>78.21</td><td>87.28</td><td>4.92</td><td>74.52</td><td>68.84</td><td>81.91</td></tr>
+    <tr><td>ACM</td><td>94.60</td><td>13.90</td><td>51.92</td><td>51.62</td><td>91.55</td><td>53.31</td><td>325.34</td><td>39.86</td><td>41.78</td><td>63.09</td><td>74.02</td><td>3.42</td><td>58.05</td><td>52.60</td><td>66.71</td></tr>
+    <tr><td>ALCNet</td><td>99.01</td><td>21.31</td><td>55.26</td><td>55.63</td><td>94.61</td><td>66.85</td><td>1051.19</td><td>40.60</td><td>44.10</td><td>65.75</td><td>79.79</td><td>1.86</td><td>61.84</td><td>56.37</td><td>72.00</td></tr>
+    <tr><td>DNANet</td><td>98.68</td><td><strong>7.37</strong></td><td>57.81</td><td>59.45</td><td>95.74</td><td>58.59</td><td>99.40</td><td>48.44</td><td>51.81</td><td>71.31</td><td>83.72</td><td>7.45</td><td>72.04</td><td>67.13</td><td>79.16</td></tr>
+    <tr><td>RDIAN</td><td>93.17</td><td>16.70</td><td>53.99</td><td>55.53</td><td>89.79</td><td>79.96</td><td>140.27</td><td>47.04</td><td>52.18</td><td>71.92</td><td>85.14</td><td>7.82</td><td>71.80</td><td>67.90</td><td>80.23</td></tr>
+    <tr><td>UIUNet</td><td>94.24</td><td>27.60</td><td>55.46</td><td>54.98</td><td>91.22</td><td>66.88</td><td>130.35</td><td>53.03</td><td>56.93</td><td>78.12</td><td>84.07</td><td>3.16</td><td>72.95</td><td>68.95</td><td>82.04</td></tr>
+    <tr><td>MSHNet</td><td>97.96</td><td>33.54</td><td>55.66</td><td>58.73</td><td>94.65</td><td>60.28</td><td>715.40</td><td>42.06</td><td>46.21</td><td>68.05</td><td>77.32</td><td>29.76</td><td>56.00</td><td>53.89</td><td>72.37</td></tr>
+    <tr><td>L2SKNet</td><td>95.20</td><td>59.28</td><td>38.71</td><td>39.96</td><td>88.08</td><td>59.25</td><td>1136.53</td><td>32.67</td><td>34.10</td><td>56.24</td><td>71.37</td><td>13.19</td><td>46.99</td><td>41.36</td><td>63.06</td></tr>
+    <tr><td rowspan="7">Multiple frame</td><td>STDMANet</td><td>95.92</td><td>11.45</td><td>54.10</td><td>54.55</td><td>93.22</td><td>83.21</td><td>153.46</td><td>59.61</td><td>58.92</td><td>85.68</td><td>87.59</td><td>2.35</td><td>73.03</td><td>69.32</td><td>85.72</td></tr>
+    <tr><td>LMAFormer</td><td><strong>99.64</strong></td><td>14.95</td><td>59.17</td><td>57.51</td><td>91.56</td><td>86.10</td><td>185.78</td><td>65.89</td><td>65.63</td><td>89.78</td><td>64.51</td><td><strong>0.21</strong></td><td>33.87</td><td>26.58</td><td>50.76</td></tr>
+    <tr><td>ResUNet+DTUM</td><td>97.24</td><td>37.73</td><td>55.71</td><td>58.59</td><td>93.96</td><td>76.70</td><td>822.62</td><td>49.50</td><td>52.32</td><td>72.39</td><td>82.63</td><td>6.31</td><td>66.84</td><td>59.93</td><td>73.81</td></tr>
+    <tr><td>DNANet+DTUM</td><td>98.44</td><td>24.46</td><td>58.66</td><td>62.06</td><td>95.40</td><td>79.07</td><td>672.77</td><td>51.76</td><td>56.22</td><td>76.01</td><td>84.57</td><td>9.93</td><td>67.14</td><td>63.20</td><td>79.48</td></tr>
+    <tr><td>DeepPro-Plus</td><td>97.48</td><td>42.74</td><td>45.13</td><td>45.80</td><td>92.45</td><td>89.71</td><td>804.90</td><td>43.93</td><td>44.48</td><td>66.26</td><td>89.16</td><td>78.34</td><td>49.84</td><td>52.43</td><td>69.26</td></tr>
+    <tr><td>OSFormer</td><td>–</td><td>–</td><td>–</td><td>–</td><td>82.06</td><td>–</td><td>–</td><td>–</td><td>–</td><td>67.72</td><td>–</td><td>–</td><td>–</td><td>–</td><td>54.81</td></tr>
+    <tr><td><strong>DeepDIG (ours)</strong></td><td>99.18</td><td>11.30</td><td><strong>65.94</strong></td><td><strong>66.55</strong></td><td><strong>98.37</strong></td><td><strong>94.17</strong></td><td><strong>35.55</strong></td><td><strong>73.06</strong></td><td><strong>73.95</strong></td><td><strong>95.11</strong></td><td><strong>91.03</strong></td><td>2.81</td><td><strong>75.26</strong></td><td><strong>74.80</strong></td><td><strong>87.10</strong></td></tr>
   </tbody>
 </table>
+</div>
 
 The manuscript reports **9.15 FPS**, **15.21M parameters**, and **33.14 GFLOPs** for the full DeepDIG pipeline at 256 x 256 input resolution on an NVIDIA RTX 4090D. FPS includes background alignment and inference.
 
