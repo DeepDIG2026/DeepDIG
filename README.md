@@ -58,6 +58,13 @@ The LMIRSTD dataset is available from the [dataset folder](https://drive.google.
 
 The full quantitative comparison is shown below. `Fa` is reported in units of `10^-6`; all other metrics are percentages. The best result for each dataset and metric is shown in **bold**. OSFormer reports only F1 in its original paper.
 
+<p align="center">
+  <img src="assets/results_tmm.svg" alt="Full quantitative comparison on IRDST, TSIRMT, and LMIRSTD" width="100%">
+</p>
+
+<details>
+<summary>View the numerical results as a table</summary>
+
 <div align="center">
 <table>
   <thead>
@@ -93,6 +100,8 @@ The full quantitative comparison is shown below. `Fa` is reported in units of `1
   </tbody>
 </table>
 </div>
+
+</details>
 
 The manuscript reports **9.15 FPS**, **15.21M parameters**, and **33.14 GFLOPs** for the full DeepDIG pipeline at 256 x 256 input resolution on an NVIDIA RTX 4090D. FPS includes background alignment and inference.
 
