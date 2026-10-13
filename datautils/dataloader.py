@@ -28,7 +28,7 @@ class BUPTMIRSDTSet(Dataset):
         # base_size and crop_size are ignored; this dataset always uses the original resolution
         self.base_size = base_size
         self.crop_size = crop_size
-        
+
         self.in_channels = channel_size
 
         # (Optional) feature extractor for background alignment
@@ -39,7 +39,7 @@ class BUPTMIRSDTSet(Dataset):
             self.sampling_strategy = 'Interval'
 
         self._items, self._mask_paths = [], []
-        
+
         # Build index entries
         def _collect_sequence_files(folder_name):
             sequence_dir = os.path.join(self.imagedir, 'images', folder_name)
@@ -60,8 +60,7 @@ class BUPTMIRSDTSet(Dataset):
                         mask_file = candidate
                         break
                 if mask_file is None:
-                    print(f"Warning: cannot find mask for image {img_name} (folder: {folder_name})")
-                    continue
+                    raise FileNotFoundError(f'Missing mask for image {img_name} (sequence: {folder_name})')
                 mask_map[img_name] = mask_file
 
             # Return only images that have a valid mask
@@ -72,7 +71,7 @@ class BUPTMIRSDTSet(Dataset):
             for folder in folder_id:
                 img_paths, mask_map = _collect_sequence_files(folder)
                 file_num = len(img_paths)
-                
+
                 # Sliding-window sampling
                 for i in range(channel_size-1, file_num):
                     img_pair, mask_pair = [], []
@@ -82,12 +81,12 @@ class BUPTMIRSDTSet(Dataset):
                         mask_pair.append(f"masks/{folder}/{mask_map[img_name]}")
                     self._items.append(img_pair)
                     self._mask_paths.append(mask_pair)
-                    
+
         elif self.mode == 'test':
             for folder in folder_id:
                 img_paths, mask_map = _collect_sequence_files(folder)
                 file_num = len(img_paths)
-                
+
                 # In testing, process every frame
                 for i in range(0, file_num):
                     img_pair, mask_pair = [], []
@@ -114,14 +113,14 @@ class BUPTMIRSDTSet(Dataset):
         Keeps original resolution (no resize/padding) and only applies random mirroring.
         """
         num_img = len(imgs)
-        
+
         # Random mirror (the only augmentation)
         if random.random() < 0.5:
             for i in range(num_img):
                 imgs[i] = imgs[i].transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
             trajectory = trajectory.transpose(Image.FLIP_LEFT_RIGHT)
-        
+
         # Keep original resolution (no resize/crop/padding)
         # Final transform
         for i in range(num_img):
@@ -129,19 +128,19 @@ class BUPTMIRSDTSet(Dataset):
         imgs, mask, trajectory = np.array(imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
         return imgs, mask, trajectory
 
-    
+
     def _val_sync_transform(self, imgs, mask, trajectory):
         """
         Validation/testing transform for LMIRSTD.
         Keeps the original resolution (no resize/padding).
         """
         num_img = len(imgs)
-        
+
         # Keep original resolution (no resize/padding)
         for i in range(num_img):
             imgs[i] = np.array(imgs[i])
         imgs, mask, trajectory = np.array(imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
-        
+
         return imgs, mask, trajectory
 
     def __getitem__(self, idx):
@@ -157,8 +156,7 @@ class BUPTMIRSDTSet(Dataset):
                 imgs.append(img)
             except Exception as e:
                 print(f"Error loading image {full_path}: {e}")
-                # Fallback to a blank image if loading fails
-                imgs.append(Image.new('L', (256, 256), 0))
+                raise OSError(f'Cannot load image: {full_path}') from e
 
         # Build mask and keypoints
         # Load mask for the current frame
@@ -233,7 +231,7 @@ class TSIRMTSet(Dataset):
         self.load_single_frame = load_single_frame  # Whether to load only the last frame
         self.resize_mode = resize_mode  # 'resize' or 'padding'
         # Use binary masks only (no Gaussian heatmap option)
-        
+
         self.in_channels = channel_size
 
         # (Optional) feature extractor for background alignment
@@ -244,20 +242,20 @@ class TSIRMTSet(Dataset):
             self.sampling_strategy = 'Interval'
 
         self._items, self._mask_paths = [], []
-        
+
         # Build index entries
         if self.mode == 'train':
             for folder in folder_id:
                 sequence_dir = os.path.join(self.imagedir, 'images', folder)
                 mask_dir = os.path.join(self.imagedir, 'masks', folder)
-                
+
                 # Auto-detect image file extensions
                 all_files = sorted(os.listdir(sequence_dir))
                 img_paths = []
                 for f in all_files:
                     if f.endswith(('.png', '.jpg', '.bmp', '.jpeg')):
                         img_paths.append(f)
-                
+
                 # Detect mask file extension
                 mask_files = sorted(os.listdir(mask_dir)) if os.path.exists(mask_dir) else []
                 mask_ext = '.png'  # default
@@ -269,15 +267,15 @@ class TSIRMTSet(Dataset):
                         elif mf.endswith('.bmp'):
                             mask_ext = '.bmp'
                             break
-                
+
                 # Print detected formats for the first folder
                 if folder == folder_id[0]:
                     print(f"  Dataset file format detection ({folder}):")
                     print(f"    Images: {os.path.splitext(img_paths[0])[1] if img_paths else 'N/A'}")
                     print(f"    Masks:  {mask_ext}")
-                
+
                 file_num = len(img_paths)
-                
+
                 # Sliding-window sampling
                 for i in range(channel_size-1, file_num):
                     img_pair, mask_pair = [], []
@@ -287,19 +285,19 @@ class TSIRMTSet(Dataset):
                         mask_pair.append(f"masks/{folder}/{img_name}{mask_ext}")
                     self._items.append(img_pair)
                     self._mask_paths.append(mask_pair)
-                    
+
         elif self.mode == 'test':
             for folder in folder_id:
                 sequence_dir = os.path.join(self.imagedir, 'images', folder)
                 mask_dir_path = os.path.join(self.imagedir, 'masks', folder)
-                
+
                 # Auto-detect image file extensions
                 all_files = sorted(os.listdir(sequence_dir))
                 img_paths = []
                 for f in all_files:
                     if f.endswith(('.png', '.jpg', '.bmp', '.jpeg')):
                         img_paths.append(f)
-                
+
                 # Detect mask file extension (use the correct path)
                 mask_files = sorted(os.listdir(mask_dir_path)) if os.path.exists(mask_dir_path) else []
                 mask_ext = '.png'  # default
@@ -311,15 +309,15 @@ class TSIRMTSet(Dataset):
                         elif mf.endswith('.bmp'):
                             mask_ext = '.bmp'
                             break
-                
+
                 # Print detected formats for the first folder
                 if folder == folder_id[0]:
                     print(f"  Validation file format detection ({folder}):")
                     print(f"    Images: {os.path.splitext(img_paths[0])[1] if img_paths else 'N/A'}")
                     print(f"    Masks:  {mask_ext}")
-                
+
                 file_num = len(img_paths)
-                
+
                 # In testing, process every frame
                 for i in range(0, file_num):
                     img_pair, mask_pair = [], []
@@ -346,30 +344,30 @@ class TSIRMTSet(Dataset):
         Supports both 'resize' and 'padding' modes.
         """
         num_img = len(imgs)
-        
+
         # Random mirror
         if random.random() < 0.5:
             for i in range(num_img):
                 imgs[i] = imgs[i].transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
             trajectory = trajectory.transpose(Image.FLIP_LEFT_RIGHT)
-        
+
         if self.resize_mode == 'padding':
             # Padding mode: pad to a multiple of 32 (200×150 → 224×160)
             padded_imgs = []
             for i in range(num_img):
                 padded_img, _, _ = pad_to_multiple_of_32(imgs[i], fill_mode='replicate')
                 padded_imgs.append(padded_img)
-            
+
             # Use constant padding for mask/trajectory (0=background)
             mask, _, _ = pad_to_multiple_of_32(mask, fill_mode='constant')
             trajectory, _, _ = pad_to_multiple_of_32(trajectory, fill_mode='constant')
-            
+
             # final transform
             for i in range(num_img):
                 padded_imgs[i] = np.array(padded_imgs[i])
             imgs, mask, trajectory = np.array(padded_imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
-        
+
         else:
             # Resize mode: resize to base_size×base_size, then crop to crop_size×crop_size
             # 1. Resize to base_size×base_size
@@ -378,7 +376,7 @@ class TSIRMTSet(Dataset):
             # Use NEAREST for masks to preserve binariness
             mask = mask.resize((self.base_size, self.base_size), Image.NEAREST)
             trajectory = trajectory.resize((self.base_size, self.base_size), Image.NEAREST)
-            
+
             # 2. Random crop if crop_size < base_size
             if self.crop_size < self.base_size:
                 # Random crop
@@ -389,37 +387,37 @@ class TSIRMTSet(Dataset):
                     imgs[i] = imgs[i].crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
                 mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
                 trajectory = trajectory.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-            
+
             # final transform
             for i in range(num_img):
                 imgs[i] = np.array(imgs[i])
             imgs, mask, trajectory = np.array(imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
-        
+
         return imgs, mask, trajectory
-    
+
     def _val_sync_transform(self, imgs, mask, trajectory):
         """
         Validation/testing transform for TSIRMT/IRDST.
         Supports both 'resize' and 'padding' modes.
         """
         num_img = len(imgs)
-        
+
         if self.resize_mode == 'padding':
             # Padding mode: pad to a multiple of 32
             padded_imgs = []
             for i in range(num_img):
                 padded_img, _, _ = pad_to_multiple_of_32(imgs[i], fill_mode='replicate')
                 padded_imgs.append(padded_img)
-            
+
             # Use constant padding for mask/trajectory (fill=0)
             mask, _, _ = pad_to_multiple_of_32(mask, fill_mode='constant')
             trajectory, _, _ = pad_to_multiple_of_32(trajectory, fill_mode='constant')
-            
+
             # final transform
             for i in range(num_img):
                 padded_imgs[i] = np.array(padded_imgs[i])
             imgs, mask, trajectory = np.array(padded_imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
-        
+
         else:
             # Resize mode: resize to base_size×base_size (no crop in validation)
             for i in range(num_img):
@@ -427,12 +425,12 @@ class TSIRMTSet(Dataset):
             # Use NEAREST for masks to preserve binariness
             mask = mask.resize((self.base_size, self.base_size), Image.NEAREST)
             trajectory = trajectory.resize((self.base_size, self.base_size), Image.NEAREST)
-            
+
             # final transform
             for i in range(num_img):
                 imgs[i] = np.array(imgs[i])
             imgs, mask, trajectory = np.array(imgs, dtype=np.float32), np.array(mask, dtype=np.float32), np.array(trajectory, dtype=np.float32)
-        
+
         return imgs, mask, trajectory
 
     def __getitem__(self, idx):
@@ -448,8 +446,7 @@ class TSIRMTSet(Dataset):
                 imgs.append(img)
             except Exception as e:
                 print(f"Error loading image {full_path}: {e}")
-                # Fallback to a blank image if loading fails
-                imgs.append(Image.new('L', (256, 256), 0))
+                raise OSError(f'Cannot load image: {full_path}') from e
 
         # Build mask and keypoints
         # Load mask for the current frame
@@ -462,7 +459,7 @@ class TSIRMTSet(Dataset):
                 else:
                     # Use binary mask (normalized to 0-1)
                     mask = mask_img.astype(np.float32) / 255.0
-                    
+
                     # Extract centroids for evaluation
                     targets = []
                     contours, _ = cv2.findContours(mask_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -504,18 +501,18 @@ class TSIRMTSet(Dataset):
         trajectory = np.expand_dims(trajectory, axis=0).astype('float32')
 
         sample_ids = img_ids
-        
+
         # Single-frame mode: return only the last frame
         if self.load_single_frame:
             # Return only the last frame and its mask
             imgs_single = imgs[-1:].copy()  # [1, H, W], keep 3D shape
             mask_single = mask  # [1, H, W]
-            
+
             if self.returnpts and self.mode == 'test':
                 return torch.from_numpy(imgs_single), torch.from_numpy(mask_single).clamp(0, 1), torch.from_numpy(targets), sample_ids[-1]
             else:
                 return torch.from_numpy(imgs_single), torch.from_numpy(mask_single).clamp(0, 1), sample_ids[-1]
-        
+
         # Sequence mode
         return torch.from_numpy(imgs), torch.from_numpy(np.concatenate([mask, trajectory], axis=0)).clamp(0, 1), torch.from_numpy(group_homo), sample_ids
 
@@ -549,20 +546,20 @@ def build_dataloader(mode, args):
             print(f"  Fast validation mode (LMIRSTD): train={train_split}, val={val_split}")
         else:
             train_split = 'train'
-            val_split = 'test'
-        
+            val_split = os.path.splitext(args.split_file)[0]
+
         if mode == 'train':
             folder_ids = read_split_txt(train_split)
         else:  # mode == 'test'
             folder_ids = read_split_txt(val_split)
-        
+
         dataset = BUPTMIRSDTSet(mode=mode,
                                dataset_dir=dataset_dir,
                                folder_id=folder_ids,
                                base_size=args.base_size,
                                crop_size=args.crop_size,
                                channel_size=args.in_channels)
-    
+
     elif args.dataset == 'TSIRMT':
         # Read TSIRMT train/test splits
         def read_split_txt(name):
@@ -584,19 +581,19 @@ def build_dataloader(mode, args):
             print(f"  Fast validation mode (TSIRMT): train={train_split}, val={val_split}")
         else:
             train_split = 'train'
-            val_split = 'test'
-        
+            val_split = os.path.splitext(args.split_file)[0]
+
         if mode == 'train':
             folder_ids = read_split_txt(train_split)
         else:  # mode == 'test'
             folder_ids = read_split_txt(val_split)
- 
+
         # Check whether args has load_single_frame
         load_single_frame = getattr(args, 'load_single_frame', False)
         # Get resize_mode (default: 'resize')
         resize_mode = getattr(args, 'resize_mode', 'resize')
         # use_gaussian_heatmap has been removed; binary masks only
-        
+
         # Reuse TSIRMTSet (same structure)
         dataset = TSIRMTSet(mode=mode,
                            dataset_dir=dataset_dir,
@@ -606,7 +603,7 @@ def build_dataloader(mode, args):
                            channel_size=args.in_channels,
                            load_single_frame=load_single_frame,
                            resize_mode=resize_mode)
-    
+
     elif args.dataset == 'IRDST':
         # IRDST dataset (same structure as TSIRMT)
         def read_split_txt(name):
@@ -623,13 +620,13 @@ def build_dataloader(mode, args):
         if mode == 'train':
             folder_ids = read_split_txt('train')  # use train.txt
         else:  # mode == 'test'
-            folder_ids = read_split_txt('test')  # use test.txt for validation
- 
+            folder_ids = read_split_txt(os.path.splitext(args.split_file)[0])
+
         # Check whether args has load_single_frame
         load_single_frame = getattr(args, 'load_single_frame', False)
         # Get resize_mode (default: 'resize')
         resize_mode = getattr(args, 'resize_mode', 'resize')
-        
+
         # Reuse TSIRMTSet (same structure)
         dataset = TSIRMTSet(mode=mode,
                            dataset_dir=dataset_dir,
@@ -641,16 +638,16 @@ def build_dataloader(mode, args):
                            resize_mode=resize_mode)
     else:
         raise ValueError(f"Unsupported dataset: {args.dataset}. Supported: IRDST, TSIRMT, LMIRSTD")
-    
+
     batch_size = args.train_batch_size if mode == 'train' else args.test_batch_size
     if mode == 'vis':
         assert batch_size == 1
     shuffle_flag = True if mode == 'train' else False
     drop_last = True if mode == 'train' else False
-    loader = DataLoader(dataset=dataset, 
-            batch_size=batch_size, 
-            shuffle=shuffle_flag, 
-            num_workers=args.workers, 
+    loader = DataLoader(dataset=dataset,
+            batch_size=batch_size,
+            shuffle=shuffle_flag,
+            num_workers=args.workers,
             drop_last=drop_last,
             pin_memory=True)
 

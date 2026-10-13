@@ -1,16 +1,13 @@
-# Runtime dependencies for DeepDIG (inference/testing).
-# Note: `torch` is typically provided by your conda env (e.g., `STDMANet`).
+# V3 reference inference/evaluation environment (Python 3.10).
+# Install the CPU/CUDA build of PyTorch 2.6.0 as described in README.md.
+numpy==1.26.4
+opencv-python==4.11.0.86
+pillow==11.2.1
+tqdm==4.67.1
+scikit-learn==1.6.1
+scikit-image==0.21.0
+matplotlib==3.8.0
+imutils==0.5.4
+kornia==0.8.1
 
-numpy
-opencv-python
-pillow
-tqdm
-scikit-learn
-scikit-image
-matplotlib
-imutils
-kornia
-
-# Optional (used only for FLOPs/GFLOPs reporting; code will skip if missing)
-thop
-
+# Optional pre-aligned detector profiling: install thop separately.
