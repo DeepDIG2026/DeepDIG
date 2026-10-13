@@ -1,10 +1,10 @@
 """
-Reliability-Aware Dynamic Convolution core for the V3 DeepDIG model.
+Reliability-Aware Dynamic Convolution core for DeepDIG.
 
 AdaptiveDiffAccumulator implements RATA; TADCModule normalizes its motion
 prior, generates a separate spatial kernel for each temporal position, and
 applies CADC to the aligned sequence. The legacy TADC names and parameter
-paths are retained so existing complete V3 checkpoints load strictly.
+paths are retained so existing complete DeepDIG checkpoints load strictly.
 """
 
 import math
@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 class AdaptiveDiffAccumulator(nn.Module):
     """
-    Reliability-Aware Temporal Aggregation (RATA) used by the V3 dynamic path.
+    Reliability-Aware Temporal Aggregation (RATA) used by the dynamic path.
 
     Regional gate: max-pool absolute differences by four, partition the pooled
     map into grid_size x grid_size regions, summarize the strongest topk_ratio
@@ -31,7 +31,7 @@ class AdaptiveDiffAccumulator(nn.Module):
     ranges=0.5. Numerical stability constants in the descriptors are 1e-6.
     Zero-initialized final gate layers recover uniform accumulation.
 
-    Disabling either gate supports V3 ablations. Diagnostics and the
+    Disabling either gate supports ablations. Diagnostics and the
     regularization helper are retained without changing inference.
     """
 
@@ -362,7 +362,7 @@ class AdaptiveDiffAccumulator(nn.Module):
 
 class TADCModule(nn.Module):
     """
-    RADC core, retaining the TADCModule name for V3 checkpoint compatibility.
+    RADC core, retaining the TADCModule name for checkpoint compatibility.
 
     This implements the accumulated_kernel functionality from STDMANet.
 

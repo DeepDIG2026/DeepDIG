@@ -8,7 +8,7 @@ DeepDIG detects small infrared targets in video sequences with significant camer
 - **Reliability-Aware Dynamic Convolution (RADC):** Combines Reliability-Aware Temporal Aggregation (RATA) with Content-Adaptive Dynamic Convolution (CADC) to reduce alignment artifacts and enhance motion cues.
 - **Motion-guided Adaptive Gating (MAG):** Fuses spatial and temporal features using motion guidance.
 
-This repository contains the **V3 complete model: DBA + RADC + MAG**, including regional and pixel-wise RATA gates. The existing `model/`, `datautils/`, `utils/`, `assets/` layout and `test_deepdig.py` entry point are retained. Complete checkpoints for IRDST, TSIRMT and LMIRSTD will be published separately. The manuscript results below are reported results; full-test reproduction with the final public checkpoints remains to be verified. [CHANGELOG.md](CHANGELOG.md) records this update and its validation scope.
+This repository contains the **complete DeepDIG model: DBA + RADC + MAG**, including regional and pixel-wise RATA gates. The existing `model/`, `datautils/`, `utils/`, `assets/` layout and `test_deepdig.py` entry point are retained. Complete checkpoints for IRDST, TSIRMT and LMIRSTD will be published separately. The manuscript results below are reported results; full-test reproduction with the final public checkpoints remains to be verified. [CHANGELOG.md](CHANGELOG.md) records this update and its validation scope.
 
 ## Method
 
@@ -18,7 +18,7 @@ This repository contains the **V3 complete model: DBA + RADC + MAG**, including 
 
 The aligned sequence is processed by static, difference, and dynamic paths before MAG fuses their features for detection.
 
-| Component | Source | V3 implementation |
+| Component | Source | Implementation |
 |---|---|---|
 | Static path | [static_path.py](model/static_path.py), [UNet_CBAM.py](model/UNet_CBAM.py) | Dual-task U-Net with transposed-convolution upsampling; current-frame features have 64 channels. |
 | DBA | [DBA_module.py](model/DBA_module.py), [frame_cache.py](model/frame_cache.py) | Descriptor sampling, mutual nearest-neighbor matching, RANSAC homography estimation and warping. It shares encoder parameters with the static path; the default descriptor and detection passes are computed separately. |
@@ -28,7 +28,7 @@ The aligned sequence is processed by static, difference, and dynamic paths befor
 | MAG | [MAG_module.py](model/MAG_module.py) | Gates use raw signed differences. Fusion order: enhanced static features, projected differential features, enhanced dynamic features. |
 | Detection head | [detection_network.py](model/detection_network.py) | Encoder-decoder detector with deep supervision; inference uses the final prediction. |
 
-The legacy `TADCModule` name and internal parameter paths are retained for V3 checkpoint compatibility. `AdaptiveDiffAccumulator` implements RATA; the rest of `TADCModule` implements motion normalization and CADC.
+The `TADCModule` class name and parameter paths are retained for checkpoint compatibility. `AdaptiveDiffAccumulator` implements RATA; the rest of `TADCModule` implements motion normalization and CADC.
 
 Default tensor flow (`N=20`, feature channels `C=64`):
 
@@ -45,7 +45,7 @@ Final probability map             [B,  1, H, W]
 
 RATA first max-pools by 4, then divides the pooled map into **4×4 regions**. The strongest 1% of responses provide mean, standard deviation, maximum and peak-to-mean statistics. Two sine/cosine frequency pairs encode temporal position. Both residual gates use `1 + 0.5 * tanh(logit)`; descriptor stability constants are `1e-6`. Top-K affects only regional descriptors; full-resolution differences remain in the weighted accumulation.
 
-V3 normalizes accumulated motion over the **entire batch tensor**, so batch composition affects predictions. The reference test uses batch size 2, ordered windows, no shuffle and no online cache. Keep these settings for metric comparisons. Dynamic coefficients are `10 * sigmoid(logit + learned_bias) + 0.1`, with no sum-to-one constraint.
+DeepDIG normalizes accumulated motion over the **entire batch tensor**, so batch composition affects predictions. The reference test uses batch size 2, ordered windows, no shuffle and no online cache. Keep these settings for metric comparisons. Dynamic coefficients are `10 * sigmoid(logit + learned_bias) + 0.1`, with no sum-to-one constraint.
 
 <table align="center">
   <tr>
@@ -136,7 +136,7 @@ The full quantitative comparison is reproduced directly from Table II of the cur
 
 The manuscript reports **9.15 FPS**, **15.21M parameters**, and **33.14 GFLOPs** for the full DeepDIG pipeline at 256 x 256 input resolution on an NVIDIA RTX 4090D. FPS includes background alignment and inference.
 
-These are manuscript-reported measurements. The default complete V3 network instantiated by this release has **13,549,436 unique parameters**. The difference in parameter counts and the benchmark numbers must be reconciled with the final checkpoints and a documented measurement protocol.
+These are manuscript-reported measurements. The default complete DeepDIG network instantiated by this release has **13,549,436 unique parameters**. The difference in parameter counts and the benchmark numbers must be reconciled with the final checkpoints and a documented measurement protocol.
 
 <p align="center">
   <img src="assets/comparison_tmm.png" alt="Qualitative comparison from the TMM manuscript" width="1000">
@@ -144,7 +144,7 @@ These are manuscript-reported measurements. The default complete V3 network inst
 
 ## Installation and checkpoints
 
-The three complete V3 checkpoints will be uploaded separately:
+The three complete DeepDIG checkpoints will be uploaded separately:
 
 | Dataset | Example filename | Download |
 |---|---|---|
@@ -152,9 +152,9 @@ The three complete V3 checkpoints will be uploaded separately:
 | TSIRMT | `DeepDIG_TSIRMT.pth` | Pending upload |
 | LMIRSTD | `DeepDIG_LMIRSTD.pth` | Pending upload |
 
-Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the V3 full configuration with 20 frames and 3×3 dynamic kernels; checkpoints from the earlier implementation belong to that earlier code version.
+Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
 
-Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the reference server environment. Install the appropriate PyTorch build first:
+Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the validation environment. Install the appropriate PyTorch build first:
 
 ```bash
 conda create -n deepdig python=3.10
@@ -165,7 +165,7 @@ pip install -r requirements.txt
 
 For CPU, use `pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu` instead. Optional `--profile` requires `thop`, which is not needed for inference or evaluation.
 
-This release was checked against the server V3 implementation on 2026-10-13 using CPU execution and existing complete checkpoints:
+This release was checked against the reference DeepDIG implementation on 2026-10-13 using CPU execution and existing complete checkpoints:
 
 | Dataset | Real-window comparison input | Strict checkpoint loading | Maximum absolute output difference | CLI partial test |
 |---|---|---|---|---|
@@ -173,11 +173,11 @@ This release was checked against the server V3 implementation on 2026-10-13 usin
 | TSIRMT | `[2,20,256,256]` | All 1,023 state entries loaded | `0` for all five predictions | 2 frames; original-size masks saved |
 | LMIRSTD | `[2,20,512,640]` | All 1,023 state entries loaded | `0` for all five predictions | 2 frames; original-size masks saved |
 
-Valid-image preprocessing, window order and alignment statistics matched V3. A missing checkpoint key was rejected. These are compatibility and execution checks; full-test manuscript metric reproduction requires the final public checkpoints.
+Valid-image preprocessing, window order and alignment statistics matched the reference implementation. A missing checkpoint key was rejected. These are compatibility and execution checks; full-test manuscript metric reproduction requires the final public checkpoints.
 
 ## Dataset layout and inference
 
-The dataset root contains `IRDST/`, `TSIRMT/` or `LMIRSTD/`. Each dataset has `images/<sequence>/<frame>`, matching `masks/<sequence>/<frame>`, and `ImageSets/test.txt` listing one sequence ID per line. A split file at the dataset root is also supported; `--split_file alternate_test.txt` selects another split. Preserve the published test IDs and sequence order. LMIRSTD is known as BUPT-MIRSDT in the server experiments; this repository uses `LMIRSTD`.
+The dataset root contains `IRDST/`, `TSIRMT/` or `LMIRSTD/`. Each dataset has `images/<sequence>/<frame>`, matching `masks/<sequence>/<frame>`, and `ImageSets/test.txt` listing one sequence ID per line. A split file at the dataset root is also supported; `--split_file alternate_test.txt` selects another split. Preserve the published test IDs and sequence order. Use the `LMIRSTD` folder name for the published dataset.
 
 | Setting | IRDST | TSIRMT | LMIRSTD |
 |---|---|---|---|
@@ -236,7 +236,7 @@ Metrics use original-resolution predictions and threshold 0.5:
 - **nIoU:** mean frame IoU; empty unions score 0.
 - **mIoU:** historical frame mean IoU; empty unions score 1, retained for comparison with training logs.
 - **Precision / Recall / F1:** rounded component centroids are greedily matched one-to-one within Euclidean distance of 3 original-image pixels. Precision/recall are averaged over frames; F1 is their harmonic mean. A frame with neither targets nor predictions scores 1 for precision and recall.
-- **Pd:** accumulated detected GT components divided by all GT components. A target is detected when a predicted pixel falls within a 3-pixel square neighborhood of any GT pixel, following V3's metric code. This pixel-neighborhood rule does not impose one-to-one component matching.
+- **Pd:** accumulated detected GT components divided by all GT components. A target is detected when a predicted pixel falls within a 3-pixel square neighborhood of any GT pixel. This pixel-neighborhood rule does not impose one-to-one component matching.
 - **Fa:** accumulated predicted pixels outside those GT neighborhoods divided by all evaluated image pixels. `FA_x1e6` is the manuscript display unit.
 - **PD_frame_mean / FA_frame_mean:** historical frame averages retained alongside accumulated Pd/Fa.
 

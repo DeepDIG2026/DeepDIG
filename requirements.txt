@@ -1,4 +1,4 @@
-# V3 reference inference/evaluation environment (Python 3.10).
+# DeepDIG reference inference/evaluation environment (Python 3.10).
 # Install the CPU/CUDA build of PyTorch 2.6.0 as described in README.md.
 numpy==1.26.4
 opencv-python==4.11.0.86

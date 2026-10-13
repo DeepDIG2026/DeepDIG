@@ -85,7 +85,7 @@ def parse_args():
     parser.add_argument('--root', type=str, default='dataset', help='Dataset root directory')
     parser.add_argument('--split_file', type=str, default='test.txt', help='Test set split file')
     parser.add_argument('--workers', type=int, default=8, help='Data loading threads')
-    parser.add_argument('--test_batch_size', type=int, default=2, help='Test batch size; V3 normalization depends on batch composition')
+    parser.add_argument('--test_batch_size', type=int, default=2, help='Test batch size; motion normalization depends on batch composition')
 
     # Preprocessing configuration
     parser.add_argument('--base_size', type=int, default=256, help='Input image base size')
@@ -556,7 +556,7 @@ def test():
                               'nIoU': 'frame mean; empty union=0',
                               'mIoU_legacy': 'frame mean; empty union=1',
                               'F1': 'harmonic mean of frame-averaged precision and recall',
-                              'PD_FA': 'accumulated V3 target/pixel counts'},
+                              'PD_FA': 'accumulated target/pixel counts'},
             'performance': {'FPS': fps, 'infer_ms_per_sample': infer_time_meter.avg * 1000,
                             'total_params': total_params, 'detector_GFLOPs': gflops,
                             'timing_scope': 'DBA alignment and detection; excludes loading and postprocessing',

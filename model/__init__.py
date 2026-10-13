@@ -4,7 +4,7 @@ DeepDIG: Deep Infrared Small Target Detection.
 Multi-branch spatio-temporal framework for infrared small moving target detection.
 
 Modules:
-    - RADC: RATA + CADC (the V3 checkpoint-compatible TADCModule)
+    - RADC: RATA + CADC (the checkpoint-compatible TADCModule)
     - MAG: Motion-Aware Gating (MotionGuidedGatingFusion)
     - DBA: Descriptor-Based Alignment
     - StaticPath, DifferencePath, DynamicPath
