@@ -48,7 +48,7 @@ MAG uses inter-frame differences to guide adaptive fusion of spatial and tempora
 | Static path and descriptor head | [static_path.py](model/static_path.py), [UNet_CBAM.py](model/UNet_CBAM.py) |
 | DBA and frame alignment | [DBA_module.py](model/DBA_module.py), [frame_cache.py](model/frame_cache.py) |
 | Difference path | [difference_path.py](model/difference_path.py) |
-| RATA and CADC | [TADC_module.py](model/TADC_module.py) |
+| RADC (RATA and CADC) | [RADC_module.py](model/RADC_module.py) |
 | Dynamic feature encoder | [dynamic_path.py](model/dynamic_path.py) |
 | MAG | [MAG_module.py](model/MAG_module.py) |
 | Detection head | [detection_network.py](model/detection_network.py) |
@@ -158,7 +158,7 @@ Download the three complete DeepDIG checkpoints from the [Google Drive weights f
 | TSIRMT | `DeepDIG_TSIRMT.pth` | [Google Drive](https://drive.google.com/file/d/1X0BZeTG_xEqHeNqKewZ425XVXJNfAKp9/view?usp=drive_link) |
 | LMIRSTD | `DeepDIG_LMIRSTD.pth` | [Google Drive](https://drive.google.com/file/d/1QBT4TOWqMI5HNjlxSLj3zfP7yT3AWAkg/view?usp=drive_link) |
 
-Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
+Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The [checkpoint loader](model/checkpoint.py) accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, automatically maps published checkpoint keys to the RADC module names, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
 
 Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the validation environment. Install the appropriate PyTorch build first:
 

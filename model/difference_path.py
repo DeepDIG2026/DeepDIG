@@ -1,182 +1,88 @@
-"""
-Difference Path.
-
-Computes masked frame differences and encodes them into differential features.
-
-Data flow:
-    X_seq [B, T, H, W] (input sequence)
-        ↓
-    Differential (frame difference + mask)
-        ↓
-    raw_diff [B, T-1, H, W] (raw differences, for TADC and MAG)
-        ↓
-    ResBlock Encoder + CBAM Attention
-        ↓
-    F_diff [B, C, H, W] (differential features)
-"""
+"""Difference path for extracting the differential feature ``F_diff``."""
 
 import torch
 import torch.nn as nn
 
-from .detection_network import ResBlock
-
 
 class ChannelAttention(nn.Module):
-    """Channel attention module."""
-    
+    """Compute CBAM channel attention."""
+
     def __init__(self, channels, ratio=16):
         super().__init__()
+        ratio = max(1, min(ratio, channels))
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
-        ratio = max(1, min(ratio, channels))
         self.fc1 = nn.Conv2d(channels, channels // ratio, 1, bias=False)
         self.fc2 = nn.Conv2d(channels // ratio, channels, 1, bias=False)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
-    
-    def forward(self, x):
-        avg_out = self.fc2(self.relu(self.fc1(self.avg_pool(x))))
-        max_out = self.fc2(self.relu(self.fc1(self.max_pool(x))))
-        return self.sigmoid(avg_out + max_out)
+
+    def forward(self, feature):
+        """Return channel attention weights."""
+        average = self.fc2(self.relu(self.fc1(self.avg_pool(feature))))
+        maximum = self.fc2(self.relu(self.fc1(self.max_pool(feature))))
+        return self.sigmoid(average + maximum)
 
 
 class SpatialAttention(nn.Module):
-    """Spatial attention module."""
-    
+    """Compute CBAM spatial attention."""
+
     def __init__(self, kernel_size=7):
         super().__init__()
-        padding = kernel_size // 2
-        self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+        self.conv = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
-    
-    def forward(self, x):
-        avg_out = x.mean(dim=1, keepdim=True)
-        max_out = x.max(dim=1, keepdim=True)[0]
-        return self.sigmoid(self.conv(torch.cat([avg_out, max_out], dim=1)))
+
+    def forward(self, feature):
+        """Return spatial attention weights."""
+        average = feature.mean(dim=1, keepdim=True)
+        maximum = feature.max(dim=1, keepdim=True)[0]
+        return self.sigmoid(self.conv(torch.cat([average, maximum], dim=1)))
 
 
-class Differential(nn.Module):
-    """
-    Frame difference computation module.
-    
-    Computes differences between current frame and all history frames,
-    applies mask to exclude zero-value regions.
-    
-    Args:
-        in_channels: Input channels (sequence length T, for compatibility)
-    """
-    
-    def __init__(self, in_channels=20):
-        super(Differential, self).__init__()
+class FrameDifference(nn.Module):
+    """Compute masked differences between the current and historical frames."""
 
-    def forward(self, x):
-        """
-        Compute frame differences.
-        
-        Args:
-            x: [B, T, H, W] input sequence
-            
-        Returns:
-            flows: [B, T-1, H, W] raw differences (with mask)
-        """
-        b, t, h, w = x.size()
-        x_plus0 = x[:, :-1]  # First T-1 frames
-        x_plus1 = x[:, -1].unsqueeze(1)  # Current frame (last frame)
-        
-        # Compute difference: current - history
-        flows = x_plus1 - x_plus0  # [B, T-1, H, W]
-        
-        # Mask: exclude zero-value regions (background/invalid)
-        mask = 1 - (x_plus0 == 0).to(x.dtype)
-        flows = flows * mask
-        
-        return flows
+    def forward(self, aligned_sequence):
+        """Return raw differences with shape ``[B, T-1, H, W]``."""
+        historical_frames = aligned_sequence[:, :-1]
+        current_frame = aligned_sequence[:, -1].unsqueeze(1)
+        raw_difference = current_frame - historical_frames
+        valid_mask = 1 - (historical_frames == 0).to(aligned_sequence.dtype)
+        return raw_difference * valid_mask
 
 
 class DifferencePath(nn.Module):
-    """
-    Difference Path (matching STDMANet's Differential_block).
-    
-    Computes masked frame differences and encodes into differential features
-    with CBAM attention enhancement.
-    
-    Data flow:
-        X_seq [B, T, H, W]
-            ↓
-        Differential
-            ↓
-        raw_diff [B, T-1, H, W] ──────────→ (for TADC and MAG)
-            ↓
-        ResBlock Encoder + CBAM
-            ↓
-        F_diff [B, C, H, W]
-    
-    Args:
-        seq_len: Input sequence length T
-        out_channels: Output feature channels (default: 64)
-    """
-    
-    def __init__(self, seq_len, out_channels=64):
+    """Encode raw frame differences into ``F_diff``."""
+
+    def __init__(self, sequence_length, out_channels=64):
         super().__init__()
-        if seq_len < 2:
-            raise ValueError(f"seq_len must be >= 2, got {seq_len}")
-        
-        self.seq_len = seq_len
-        
-        # Frame difference module
-        self.diff = Differential(in_channels=seq_len)
-        
-        # Feature encoder: T-1 channels → out_channels (matching Differential_block)
-        self.conv1 = nn.Conv2d(seq_len - 1, out_channels, kernel_size=3, stride=1, padding=1)
+        if sequence_length < 2:
+            raise ValueError(f"sequence_length must be at least 2, got {sequence_length}")
+        self.sequence_length = sequence_length
+        self.frame_difference = FrameDifference()
+        self.conv1 = nn.Conv2d(sequence_length - 1, out_channels, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
-        
-        # Shortcut for residual connection
         self.shortcut = nn.Sequential(
-            nn.Conv2d(seq_len - 1, out_channels, kernel_size=1, stride=1),
-            nn.BatchNorm2d(out_channels)
+            nn.Conv2d(sequence_length - 1, out_channels, 1),
+            nn.BatchNorm2d(out_channels),
         )
-        
-        # CBAM attention (matching STDMANet)
         ratio = 16 if out_channels >= 16 else max(1, out_channels // 4)
-        self.ca = ChannelAttention(out_channels, ratio=ratio)
-        self.sa = SpatialAttention()
+        self.channel_attention = ChannelAttention(out_channels, ratio=ratio)
+        self.spatial_attention = SpatialAttention()
 
-    def forward(self, x):
-        """
-        Forward pass.
-        
-        Args:
-            x: [B, T, H, W] DBA-aligned sequence
-        
-        Returns:
-            diff_feat: [B, C, H, W] differential features
-            raw_diff: [B, T-1, H, W] raw differences (with mask, for TADC and MAG)
-        """
-        # Compute raw difference (with mask)
-        raw_diff = self.diff(x)  # [B, T-1, H, W]
-        
-        # Residual connection
-        residual = self.shortcut(raw_diff)
-        
-        # Encode with convolutions
-        out = self.conv1(raw_diff)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        
-        # CBAM attention
-        out = self.ca(out) * out
-        out = self.sa(out) * out
-        
-        # Residual add
-        out = out + residual
-        diff_feat = self.relu(out)
-        
-        return diff_feat, raw_diff
+    def forward(self, aligned_sequence):
+        """Return ``F_diff`` and its raw difference tensor."""
+        raw_difference = self.frame_difference(aligned_sequence)
+        residual = self.shortcut(raw_difference)
+        differential_feature = self.bn2(
+            self.conv2(self.relu(self.bn1(self.conv1(raw_difference))))
+        )
+        differential_feature = self.channel_attention(differential_feature) * differential_feature
+        differential_feature = self.spatial_attention(differential_feature) * differential_feature
+        return self.relu(differential_feature + residual), raw_difference
 
 
-__all__ = ['DifferencePath', 'Differential']
+__all__ = ["DifferencePath", "FrameDifference"]

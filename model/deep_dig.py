@@ -1,377 +1,264 @@
-"""
-DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better.
-
-Multi-branch spatio-temporal framework for infrared small moving target detection.
-
-Architecture:
-    Static Path (DualTaskUNet) → F_static [B, C, H, W]
-    Difference Path → F_diff [B, C, H, W] + raw_diff [B, T-1, H, W]
-    Dynamic Path (RADC: RATA + CADC) → F_dynamic [B, C, H, W]
-    MAG Module → F_fused [B, C, H, W]
-    Detection Network → output [B, 1, H, W]
-"""
+"""Top-level DeepDIG model and optional DBA-backed frame management."""
 
 import torch
 import torch.nn as nn
 
-from .static_path import StaticPath
+from .detection_network import DetectionNetwork, ResBlock
 from .difference_path import DifferencePath
 from .dynamic_path import DynamicPath
-from .MAG_module import MAGModule
-from .detection_network import DetectionNetwork, ResBlock
 from .frame_cache import FrameAlignmentManager
+from .MAG_module import MAGModule
+from .static_path import StaticPath
 
 
 class DeepDIG(nn.Module):
-    """
-    DeepDIG base model.
+    """Run static, difference, and dynamic paths on an aligned frame sequence."""
 
-    Assumes input sequence is already aligned. For alignment support,
-    use DeepDIG_WithCache.
-
-    Args:
-        input_channels: Sequence length T (default: 20)
-        deep_supervision: Enable deep supervision (default: False)
-        detection_channels: Feature channels (default: 64)
-        accumulator_use_global: Forwarded to DynamicPath. If False the
-            AdaptiveDiffAccumulator's regional temporal gate is disabled
-            (ablation study).
-        accumulator_use_spatial: Forwarded to DynamicPath. If False the
-            AdaptiveDiffAccumulator's per-pixel spatial gate is disabled
-            (ablation study).
-    """
-
-    def __init__(self, input_channels=20, deep_supervision=False,
-                 detection_channels=64,
-                 accumulator_use_global=True, accumulator_use_spatial=True,
-                 use_dynamic_path=True, use_mag=True,
-                 tadc_kernel_size=3):
+    def __init__(
+        self,
+        sequence_length=20,
+        deep_supervision=False,
+        detection_channels=64,
+        rata_use_region=True,
+        rata_use_pixel=True,
+        use_dynamic_path=True,
+        use_mag=True,
+        cadc_kernel_size=3,
+    ):
         super().__init__()
-
-        self.input_channels = input_channels
+        self.sequence_length = sequence_length
         self.deep_supervision = deep_supervision
         self.detection_channels = detection_channels
         self.use_dynamic_path = bool(use_dynamic_path)
         self.use_mag = bool(use_mag)
-
-        # Static Path
         self.static_path = StaticPath(
-            detection_channels=detection_channels,
-            enable_xfeat=True
+            detection_channels=detection_channels, enable_descriptors=True
         )
-        self.sp = self.static_path  # alias
-
-        # Difference Path
         self.difference_path = DifferencePath(
-            seq_len=input_channels,
-            out_channels=detection_channels
+            sequence_length=sequence_length, out_channels=detection_channels
         )
-
-        # Dynamic Path (RADC: RATA + CADC)
         self.dynamic_path = DynamicPath(
-            seq_len=input_channels,
+            sequence_length=sequence_length,
             out_channels=detection_channels,
-            kernel_size=tadc_kernel_size,
-            accumulator_use_global=accumulator_use_global,
-            accumulator_use_spatial=accumulator_use_spatial,
+            cadc_kernel_size=cadc_kernel_size,
+            rata_use_region=rata_use_region,
+            rata_use_pixel=rata_use_pixel,
         )
-
-        # MAG Module (uses raw_diff for gate, matching STDMANet)
         self.mag_module = MAGModule(
             in_channels=detection_channels,
             gate_channels=32,
             out_channels=detection_channels,
-            raw_diff_channels=input_channels - 1  # T-1 channels for raw_diff
+            difference_channels=sequence_length - 1,
         )
-
-        # Detection Network
         self.detection_network = DetectionNetwork(
-            input_channels=detection_channels,
+            feature_channels=detection_channels,
             deep_supervision=deep_supervision,
-            block=ResBlock
+            block=ResBlock,
         )
 
-    def forward(self, x_seq, extract_xfeat=False):
-        """
-        Args:
-            x_seq: [B, T, H, W] aligned input sequence
-            extract_xfeat: Whether to extract XFeat outputs
-
-        Returns:
-            Output mask [B, 1, H, W] or list if deep_supervision
-        """
-        # Static Path: current frame only
-        x_curr = x_seq[:, -1].unsqueeze(1)
-
-        if extract_xfeat:
-            static_feat = self.static_path(x_curr, mode='detection')
-            xfeat_out = self.static_path(x_curr, mode='xfeat')
-            self.xfeat_outputs = {
-                'descriptors': xfeat_out['descriptors'],
-                'keypoints': xfeat_out['keypoints'],
-                'heatmap': xfeat_out['heatmap'],
+    def forward(self, aligned_sequence, extract_descriptors=False):
+        """Return a target mask from ``[B, T, H, W]`` aligned frames."""
+        current_frame = aligned_sequence[:, -1].unsqueeze(1)
+        static_feature = self.static_path(current_frame, mode="detection")
+        if extract_descriptors:
+            descriptor_output = self.static_path(current_frame, mode="descriptor")
+            self.descriptor_outputs = {
+                "descriptors": descriptor_output["descriptors"],
+                "keypoints": descriptor_output["keypoints"],
+                "heatmap": descriptor_output["heatmap"],
             }
-        else:
-            static_feat = self.static_path(x_curr, mode='detection')
 
-        # Difference Path
-        diff_feat, raw_diff = self.difference_path(x_seq)
-
-        # Dynamic Path (RADC: RATA + CADC)
-        if self.use_dynamic_path:
-            dynamic_feat = self.dynamic_path(x_seq, raw_diff)
-        else:
-            dynamic_feat = None
-
+        differential_feature, raw_difference = self.difference_path(aligned_sequence)
+        dynamic_feature = (
+            self.dynamic_path(aligned_sequence, raw_difference)
+            if self.use_dynamic_path
+            else None
+        )
         if self.use_mag:
-            fused_feat = self.mag_module(static_feat, diff_feat, dynamic_feat, raw_diff=raw_diff)
+            fused_feature = self.mag_module(
+                static_feature,
+                differential_feature,
+                dynamic_feature,
+                raw_difference=raw_difference,
+            )
         else:
-            features = [static_feat, diff_feat]
-            if self.use_dynamic_path:
-                features.append(dynamic_feat)
-            fused_feat = features[0]
-            for feat in features[1:]:
-                fused_feat = fused_feat + feat
-            fused_feat = fused_feat / len(features)
-
-        # Detection Network
-        output = self.detection_network(fused_feat)
-
-        return output
+            features = [static_feature, differential_feature]
+            if dynamic_feature is not None:
+                features.append(dynamic_feature)
+            fused_feature = sum(features) / len(features)
+        return self.detection_network(fused_feature)
 
     def extract_descriptors(self, image, threshold=0.1, top_k=1024):
-        """Extract descriptors for DBA alignment."""
-        return self.sp.extract_descriptors(image, threshold=threshold, top_k=top_k)
+        """Extract descriptors and keypoints for DBA."""
+        return self.static_path.extract_descriptors(
+            image, threshold=threshold, top_k=top_k
+        )
 
-    def get_xfeat_outputs(self):
-        """Get XFeat outputs (call forward with extract_xfeat=True first)."""
-        if hasattr(self, 'xfeat_outputs'):
-            return self.xfeat_outputs
-        raise RuntimeError('XFeat outputs not available.')
+    def get_descriptor_outputs(self):
+        """Return descriptor outputs cached by the latest forward pass."""
+        if hasattr(self, "descriptor_outputs"):
+            return self.descriptor_outputs
+        raise RuntimeError("Descriptor outputs are not available")
 
 
 class DeepDIG_WithCache(DeepDIG):
-    """
-    DeepDIG with frame alignment support.
-
-    Extends DeepDIG with:
-    - Frame caching for inference
-    - Batch descriptor alignment for training
-
-    Args:
-        input_channels: Sequence length T
-        deep_supervision: Enable deep supervision
-        detection_channels: Feature channels
-        window_size: Cache window size
-        match_threshold: Descriptor matching threshold
-        min_matches: Minimum matches for valid alignment
-        descriptor_threshold: Keypoint detection threshold
-        max_keypoints: Maximum keypoints to extract
-    """
+    """Extend DeepDIG with batch DBA and streaming frame-cache alignment."""
 
     def __init__(
         self,
-        input_channels=20,
+        sequence_length=20,
         deep_supervision=False,
         detection_channels=64,
-        window_size=20,
+        window_size=None,
         match_threshold=0.7,
         min_matches=10,
         descriptor_threshold=0.25,
         max_keypoints=2048,
-        accumulator_use_global=True,
-        accumulator_use_spatial=True,
+        rata_use_region=True,
+        rata_use_pixel=True,
         use_dynamic_path=True,
         use_mag=True,
-        tadc_kernel_size=3,
+        cadc_kernel_size=3,
     ):
         super().__init__(
-            input_channels=input_channels,
+            sequence_length=sequence_length,
             deep_supervision=deep_supervision,
             detection_channels=detection_channels,
-            accumulator_use_global=accumulator_use_global,
-            accumulator_use_spatial=accumulator_use_spatial,
+            rata_use_region=rata_use_region,
+            rata_use_pixel=rata_use_pixel,
             use_dynamic_path=use_dynamic_path,
             use_mag=use_mag,
-            tadc_kernel_size=tadc_kernel_size,
+            cadc_kernel_size=cadc_kernel_size,
         )
-
-        # Frame Alignment Manager
+        window_size = sequence_length if window_size is None else window_size
+        if window_size != sequence_length:
+            raise ValueError("window_size must equal sequence_length")
         self.alignment_manager = FrameAlignmentManager(
             window_size=window_size,
             match_threshold=match_threshold,
             min_matches=min_matches,
         )
-
         self.window_size = window_size
         self.descriptor_threshold = descriptor_threshold
         self.max_keypoints = max_keypoints
 
     def enable_cache(self):
+        """Enable streaming frame-cache mode."""
         self.alignment_manager.enable_cache()
 
     def disable_cache(self):
+        """Disable streaming frame-cache mode."""
         self.alignment_manager.disable_cache()
 
     def reset_cache(self):
+        """Clear all cached frames and descriptors."""
         self.alignment_manager.reset_cache()
 
-    def forward(self, input, extract_xfeat=False, use_cache=None,
-                reset_cache=False, align_mode='none'):
-        """
-        Args:
-            input: [B, 1, H, W] single frame (cache mode) or
-                   [B, T, H, W] sequence (batch mode)
-            extract_xfeat: Extract XFeat outputs
-            use_cache: Use cache mode (None = use internal flag)
-            reset_cache: Reset cache before processing
-            align_mode: 'none' | 'descriptor' | 'cache'
-
-        Returns:
-            align_mode='none': output
-            other modes: (output, alignment_stats)
-        """
+    def forward(
+        self,
+        model_input,
+        extract_descriptors=False,
+        use_cache=None,
+        reset_cache=False,
+        align_mode="none",
+    ):
+        """Run direct, descriptor-aligned, or cached inference."""
         if use_cache is None:
             use_cache = self.alignment_manager.use_cache
-
         if reset_cache:
             self.reset_cache()
 
-        # Batch alignment mode (training)
-        if align_mode == 'descriptor' and not use_cache:
-            B, T, H, W = input.shape
-
-            # Extract descriptors for all frames
+        if align_mode == "descriptor" and not use_cache:
+            batch_size, sequence_length, height, width = model_input.shape
             with torch.no_grad():
-                all_frames = input.view(B * T, 1, H, W)
-                desc_output = self.extract_descriptors(
+                all_frames = model_input.view(
+                    batch_size * sequence_length, 1, height, width
+                )
+                descriptor_output = self.extract_descriptors(
                     all_frames,
                     threshold=self.descriptor_threshold,
-                    top_k=self.max_keypoints
+                    top_k=self.max_keypoints,
                 )
-                desc_list = [desc_output['descriptors'][i:i+1] for i in range(B * T)]
-                kpts_list = desc_output['keypoints']
-
-            # Align sequence
-            aligned_data, align_stats = self.alignment_manager.align_sequence(
-                input, desc_list, kpts_list
+                descriptor_list = [
+                    descriptor_output["descriptors"][index : index + 1]
+                    for index in range(batch_size * sequence_length)
+                ]
+            aligned_sequence, alignment_statistics = (
+                self.alignment_manager.align_sequence(
+                    model_input,
+                    descriptor_list,
+                    descriptor_output["keypoints"],
+                )
             )
+            output = super().forward(
+                aligned_sequence, extract_descriptors=extract_descriptors
+            )
+            return output, alignment_statistics
 
-            output = super().forward(aligned_data, extract_xfeat=extract_xfeat)
-            return output, align_stats
-
-        # Cache mode (inference)
-        elif use_cache or align_mode == 'cache':
-            if input.dim() != 4 or input.shape[1] != 1:
-                raise ValueError(f"Cache mode requires [B, 1, H, W], got {input.shape}")
-
-            B, C, H, W = input.shape
-            if B != 1:
-                raise ValueError(f"Cache mode requires batch_size=1, got {B}")
-
-            current_frame = input[0, 0]
-
-            # Extract descriptors
-            desc_output = self.extract_descriptors(
-                input,
+        if use_cache or align_mode == "cache":
+            if model_input.dim() != 4 or model_input.shape[1] != 1:
+                raise ValueError(
+                    f"Cache mode requires [B, 1, H, W], got {model_input.shape}"
+                )
+            if model_input.shape[0] != 1:
+                raise ValueError("Cache mode requires batch_size=1")
+            descriptor_output = self.extract_descriptors(
+                model_input,
                 threshold=self.descriptor_threshold,
                 top_k=self.max_keypoints,
             )
-
-            current_desc = desc_output['descriptors']
-            current_kpts = desc_output['keypoints'][0]
-
-            # Build aligned sequence
-            aligned_sequence, align_stats = self.alignment_manager.align_with_cache(
-                current_frame, current_desc, current_kpts
+            aligned_sequence, alignment_statistics = (
+                self.alignment_manager.align_with_cache(
+                    model_input[0, 0],
+                    descriptor_output["descriptors"],
+                    descriptor_output["keypoints"][0],
+                )
             )
+            output = super().forward(
+                aligned_sequence.unsqueeze(0), extract_descriptors=extract_descriptors
+            )
+            return output, alignment_statistics
 
-            sequence_input = aligned_sequence.unsqueeze(0)
-            output = super().forward(sequence_input, extract_xfeat=extract_xfeat)
-
-            return output, align_stats
-
-        # No alignment (already aligned)
-        else:
-            return super().forward(input, extract_xfeat=extract_xfeat)
+        return super().forward(model_input, extract_descriptors=extract_descriptors)
 
 
 def build_deep_dig(
-    input_channels=20,
+    sequence_length=20,
     deep_supervision=False,
     detection_channels=64,
     with_cache=True,
-    window_size=20,
+    window_size=None,
     match_threshold=0.7,
     min_matches=10,
     descriptor_threshold=0.25,
     max_keypoints=2048,
-    accumulator_use_global=True,
-    accumulator_use_spatial=True,
+    rata_use_region=True,
+    rata_use_pixel=True,
     use_dynamic_path=True,
     use_mag=True,
-    tadc_kernel_size=3,
-    **kwargs,
+    cadc_kernel_size=3,
 ):
-    """
-    Build DeepDIG model.
-
-    Args:
-        input_channels: Sequence length T
-        deep_supervision: Enable deep supervision
-        detection_channels: Feature channels
-        with_cache: Include alignment support
-        window_size: Cache window size
-        match_threshold: Descriptor matching threshold
-        min_matches: Minimum matches for alignment
-        descriptor_threshold: Keypoint detection threshold
-        max_keypoints: Maximum keypoints
-        accumulator_use_global: Toggle the AdaptiveDiffAccumulator's regional
-            temporal gate (ablation flag, default True).
-        accumulator_use_spatial: Toggle the AdaptiveDiffAccumulator's
-            per-pixel spatial gate (ablation flag, default True).
-
-    Returns:
-        DeepDIG or DeepDIG_WithCache instance
-    """
-    if with_cache:
-        return DeepDIG_WithCache(
-            input_channels=input_channels,
-            deep_supervision=deep_supervision,
-            detection_channels=detection_channels,
-            window_size=window_size,
-            match_threshold=match_threshold,
-            min_matches=min_matches,
-            descriptor_threshold=descriptor_threshold,
-            max_keypoints=max_keypoints,
-            accumulator_use_global=accumulator_use_global,
-            accumulator_use_spatial=accumulator_use_spatial,
-            use_dynamic_path=use_dynamic_path,
-            use_mag=use_mag,
-            tadc_kernel_size=tadc_kernel_size,
-        )
-    else:
-        return DeepDIG(
-            input_channels=input_channels,
-            deep_supervision=deep_supervision,
-            detection_channels=detection_channels,
-            accumulator_use_global=accumulator_use_global,
-            accumulator_use_spatial=accumulator_use_spatial,
-            use_dynamic_path=use_dynamic_path,
-            use_mag=use_mag,
-            tadc_kernel_size=tadc_kernel_size,
-        )
+    """Build DeepDIG with or without frame alignment and caching support."""
+    common = dict(
+        sequence_length=sequence_length,
+        deep_supervision=deep_supervision,
+        detection_channels=detection_channels,
+        rata_use_region=rata_use_region,
+        rata_use_pixel=rata_use_pixel,
+        use_dynamic_path=use_dynamic_path,
+        use_mag=use_mag,
+        cadc_kernel_size=cadc_kernel_size,
+    )
+    if not with_cache:
+        return DeepDIG(**common)
+    return DeepDIG_WithCache(
+        **common,
+        window_size=window_size,
+        match_threshold=match_threshold,
+        min_matches=min_matches,
+        descriptor_threshold=descriptor_threshold,
+        max_keypoints=max_keypoints,
+    )
 
 
-# Backward compatibility aliases
-build_stdmanet_with_cache = build_deep_dig
-STDMANet_WithCache = DeepDIG_WithCache
-
-
-__all__ = [
-    'DeepDIG',
-    'DeepDIG_WithCache',
-    'build_deep_dig',
-    'build_stdmanet_with_cache',
-    'STDMANet_WithCache',
-]
+__all__ = ["DeepDIG", "DeepDIG_WithCache", "build_deep_dig"]

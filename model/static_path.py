@@ -1,9 +1,4 @@
-"""
-Static Path.
-
-Extracts static spatial features from current frame.
-Also provides descriptor extraction for DBA alignment.
-"""
+"""Static path for extracting ``F_static`` and descriptors for DBA."""
 
 import torch
 import torch.nn as nn
@@ -12,7 +7,7 @@ import torch.nn.functional as F
 from .UNet_CBAM import DoubleConv, Down, Up_CBAM, OutConv
 
 
-class XFeatDescriptorHead(nn.Module):
+class DescriptorHead(nn.Module):
     """Multi-scale feature fusion for descriptor extraction."""
 
     def __init__(self):
@@ -46,7 +41,7 @@ class XFeatDescriptorHead(nn.Module):
         return self.fusion(p2 + p3 + p4)
 
 
-class XFeatKeypointHead(nn.Module):
+class KeypointHead(nn.Module):
     """Keypoint detection head with 8x8 grid classification."""
 
     def __init__(self, in_channels=64):
@@ -75,7 +70,7 @@ class XFeatKeypointHead(nn.Module):
         return self.head(x_unfold)
 
 
-class XFeatHeatmapHead(nn.Module):
+class HeatmapHead(nn.Module):
     """Keypoint reliability heatmap head."""
 
     def __init__(self, in_channels=64):
@@ -101,21 +96,21 @@ class DualTaskUNet(nn.Module):
 
     Encoder: Progressive 2x downsampling to H/32
     Decoder: Transposed conv upsampling with CBAM attention
-    XFeat branch: Descriptor extraction at H/8 resolution
+    Descriptor branch: Descriptor extraction at H/8 resolution
 
     Args:
         n_channels: Input channels (default: 1)
         detection_channels: Detection output channels (default: 64)
         bilinear: Use bilinear upsampling (default: False)
-        enable_xfeat: Enable XFeat branch (default: True)
+        enable_descriptors: Enable descriptor branch (default: True)
     """
 
-    def __init__(self, n_channels=1, detection_channels=64, bilinear=False, enable_xfeat=True):
+    def __init__(self, n_channels=1, detection_channels=64, bilinear=False, enable_descriptors=True):
         super().__init__()
         self.n_channels = n_channels
         self.detection_channels = detection_channels
         self.bilinear = bilinear
-        self.enable_xfeat = enable_xfeat
+        self.enable_descriptors = enable_descriptors
 
         # Encoder
         self.inc = DoubleConv(n_channels, 16)
@@ -167,11 +162,11 @@ class DualTaskUNet(nn.Module):
             'mask_proj': nn.Conv2d(detection_channels, 1, kernel_size=1)
         })
 
-        # XFeat branch
-        if enable_xfeat:
-            self.descriptor_head = XFeatDescriptorHead()
-            self.keypoint_head = XFeatKeypointHead(in_channels=64)
-            self.heatmap_head = XFeatHeatmapHead(in_channels=64)
+        # Descriptor branch
+        if enable_descriptors:
+            self.descriptor_head = DescriptorHead()
+            self.keypoint_head = KeypointHead(in_channels=64)
+            self.heatmap_head = HeatmapHead(in_channels=64)
 
             self.fine_matcher = nn.Sequential(
                 nn.Linear(128, 512),
@@ -195,15 +190,15 @@ class DualTaskUNet(nn.Module):
         """
         Args:
             x: [B, 1, H, W] input image
-            mode: 'detection' | 'xfeat' | 'both'
+            mode: 'detection' | 'descriptor' | 'both'
             return_features: Return intermediate features
 
         Returns:
             mode='detection': [B, C, H, W] detection features
-            mode='xfeat': dict with descriptors, keypoints, heatmap
+            mode='descriptor': dict with descriptors, keypoints, heatmap
             mode='both': dict with all outputs
         """
-        if mode in ['xfeat', 'both'] and self.enable_xfeat:
+        if mode in ['descriptor', 'both'] and self.enable_descriptors:
             x = x.mean(dim=1, keepdim=True) if x.shape[1] > 1 else x
             x = self.norm(x)
 
@@ -226,8 +221,8 @@ class DualTaskUNet(nn.Module):
             d5 = self.up5(d4, x1)
             detection_features = self.outc(d5)
 
-        # XFeat branch
-        if mode in ['xfeat', 'both'] and self.enable_xfeat:
+        # Descriptor branch
+        if mode in ['descriptor', 'both'] and self.enable_descriptors:
             descriptors = self.descriptor_head(x4, x5, x6)
             keypoints = self.keypoint_head(x_input)
             heatmap = self.heatmap_head(descriptors)
@@ -241,7 +236,7 @@ class DualTaskUNet(nn.Module):
                 }
             return detection_features
 
-        elif mode == 'xfeat':
+        elif mode == 'descriptor':
             return {
                 'descriptors': descriptors,
                 'keypoints': keypoints,
@@ -290,7 +285,7 @@ class DualTaskUNet(nn.Module):
             dict with 'descriptors', 'keypoints', 'scores', 'heatmap'
         """
         with torch.no_grad():
-            outputs = self(image, mode='xfeat')
+            outputs = self(image, mode='descriptor')
 
             heatmap = outputs['heatmap']
             descriptors = outputs['descriptors']
@@ -335,35 +330,35 @@ class StaticPath(nn.Module):
     """
     Static feature extraction branch.
 
-    Uses DualTaskUNet for detection features and XFeat descriptors.
+    Uses DualTaskUNet for detection features and descriptors.
 
     Args:
         detection_channels: Output feature channels (default: 64)
-        enable_xfeat: Enable descriptor extraction (default: True)
+        enable_descriptors: Enable descriptor extraction (default: True)
     """
 
-    def __init__(self, detection_channels=64, enable_xfeat=True):
+    def __init__(self, detection_channels=64, enable_descriptors=True):
         super().__init__()
 
         self.detection_channels = detection_channels
-        self.enable_xfeat = enable_xfeat
+        self.enable_descriptors = enable_descriptors
 
         self.unet = DualTaskUNet(
             n_channels=1,
             detection_channels=detection_channels,
             bilinear=False,
-            enable_xfeat=enable_xfeat
+            enable_descriptors=enable_descriptors
         )
 
     def forward(self, x_curr, mode='detection'):
         """
         Args:
             x_curr: [B, 1, H, W] current frame
-            mode: 'detection' | 'xfeat' | 'both'
+            mode: 'detection' | 'descriptor' | 'both'
 
         Returns:
             mode='detection': [B, C, H, W] static features
-            mode='xfeat': dict with descriptors, keypoints, heatmap
+            mode='descriptor': dict with descriptors, keypoints, heatmap
             mode='both': dict with both outputs
         """
         return self.unet(x_curr, mode=mode)

@@ -1,39 +1,17 @@
-"""
-Dynamic Path with Reliability-Aware Dynamic Convolution (RADC).
+"""Dynamic path for extracting the dynamic feature ``F_dyna``.
 
-Contains the RADC core (TADCModule) and Feature Encoder with CBAM for temporal motion feature enhancement.
-
-The feature encoder follows STDMANet's Dynamic_block structure.
-
-Data flow (paper Figures 2-4):
-    X_aligned [B, T, H, W] (DBA-aligned sequence)
-    raw_diff [B, T-1, H, W] (raw differences, from Difference Path)
-        │
-        ▼
-    ┌─────────────────┐
-    │    RADC core    │  (RATA aggregation → CADC kernel generation and enhancement)
-    └────────┬────────┘
-             │
-             ▼
-    enhanced_seq [B, T, H, W]
-             │
-             ▼
-    ┌─────────────────┐
-    │ Feature Encoder │  (Conv + CBAM: T → C)
-    └────────┬────────┘
-             │
-             ▼
-    F_dynamic [B, C, H, W] (dynamic features)
+The path applies Reliability-Aware Dynamic Convolution (RADC), comprising
+RATA and CADC, before residual convolutional and CBAM feature encoding.
 """
 
 import torch
 import torch.nn as nn
 
-from .TADC_module import TADCModule
+from .RADC_module import ReliabilityAwareDynamicConvolution
 
 
 class ChannelAttention(nn.Module):
-    """Channel attention module."""
+    """Compute CBAM channel attention."""
 
     def __init__(self, channels, ratio=16):
         super().__init__()
@@ -45,126 +23,73 @@ class ChannelAttention(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
-        avg_out = self.fc2(self.relu(self.fc1(self.avg_pool(x))))
-        max_out = self.fc2(self.relu(self.fc1(self.max_pool(x))))
-        return self.sigmoid(avg_out + max_out)
+    def forward(self, feature):
+        """Return channel attention weights for ``feature``."""
+        average = self.fc2(self.relu(self.fc1(self.avg_pool(feature))))
+        maximum = self.fc2(self.relu(self.fc1(self.max_pool(feature))))
+        return self.sigmoid(average + maximum)
 
 
 class SpatialAttention(nn.Module):
-    """Spatial attention module."""
+    """Compute CBAM spatial attention."""
 
     def __init__(self, kernel_size=7):
         super().__init__()
-        padding = kernel_size // 2
-        self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+        self.conv = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
-        avg_out = x.mean(dim=1, keepdim=True)
-        max_out = x.max(dim=1, keepdim=True)[0]
-        return self.sigmoid(self.conv(torch.cat([avg_out, max_out], dim=1)))
+    def forward(self, feature):
+        """Return spatial attention weights for ``feature``."""
+        average = feature.mean(dim=1, keepdim=True)
+        maximum = feature.max(dim=1, keepdim=True)[0]
+        return self.sigmoid(self.conv(torch.cat([average, maximum], dim=1)))
 
 
 class DynamicPath(nn.Module):
-    """
-    Dynamic Path with Reliability-Aware Dynamic Convolution (RADC).
+    """Extract the dynamic feature ``F_dyna`` from an aligned sequence."""
 
-    Contains the RADC core (TADCModule) and Feature Encoder with CBAM attention.
-
-    Components:
-        1. RADC core: RATA aggregation followed by CADC enhancement
-        2. Feature Encoder: Conv + CBAM encodes enhanced sequence to features
-
-    Data flow:
-        X_aligned [B, T, H, W] + raw_diff [B, T-1, H, W]
-            ↓
-        RADC core (RATA → CADC → enhance)
-            ↓
-        enhanced_seq [B, T, H, W]
-            ↓
-        Feature Encoder (Conv + CBAM)
-            ↓
-        F_dynamic [B, C, H, W]
-
-    Args:
-        seq_len: Input sequence length T
-        out_channels: Output feature channels (default: 64)
-        kernel_size: CADC kernel size (default: 3)
-        reduction: RADC core channel reduction ratio (default: 4)
-        accumulator_use_global: Forwarded to TADCModule -> AdaptiveDiffAccumulator
-            for ablation studies. Default True.
-        accumulator_use_spatial: Forwarded to TADCModule -> AdaptiveDiffAccumulator
-            for ablation studies. Default True.
-    """
-
-    def __init__(self, seq_len, out_channels=64, kernel_size=3, reduction=4,
-                 accumulator_use_global=True, accumulator_use_spatial=True):
+    def __init__(
+        self,
+        sequence_length,
+        out_channels=64,
+        cadc_kernel_size=3,
+        reduction=4,
+        rata_use_region=True,
+        rata_use_pixel=True,
+    ):
         super().__init__()
-
-        self.seq_len = seq_len
+        self.sequence_length = sequence_length
         self.out_channels = out_channels
-
-        # RADC core (checkpoint-compatible TADCModule)
-        self.tadc = TADCModule(
-            seq_len=seq_len,
-            kernel_size=kernel_size,
+        self.radc = ReliabilityAwareDynamicConvolution(
+            sequence_length=sequence_length,
+            kernel_size=cadc_kernel_size,
             reduction=reduction,
-            accumulator_use_global=accumulator_use_global,
-            accumulator_use_spatial=accumulator_use_spatial,
+            rata_use_region=rata_use_region,
+            rata_use_pixel=rata_use_pixel,
         )
-
-        # Feature Encoder with CBAM (matching Dynamic_block)
-        self.conv1 = nn.Conv2d(seq_len, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(sequence_length, out_channels, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
-
-        # Shortcut for residual connection
         self.shortcut = nn.Sequential(
-            nn.Conv2d(seq_len, out_channels, kernel_size=1, stride=1),
-            nn.BatchNorm2d(out_channels)
+            nn.Conv2d(sequence_length, out_channels, 1),
+            nn.BatchNorm2d(out_channels),
         )
-
-        # CBAM attention (matching STDMANet)
         ratio = 16 if out_channels >= 16 else max(1, out_channels // 4)
-        self.ca = ChannelAttention(out_channels, ratio=ratio)
-        self.sa = SpatialAttention()
+        self.channel_attention = ChannelAttention(out_channels, ratio=ratio)
+        self.spatial_attention = SpatialAttention()
 
-    def forward(self, x_aligned, raw_diff):
-        """
-        Forward pass.
-
-        Args:
-            x_aligned: [B, T, H, W] DBA-aligned sequence
-            raw_diff: [B, T-1, H, W] raw differences (from Difference Path)
-
-        Returns:
-            F_dynamic: [B, C, H, W] dynamic features
-        """
-        # RADC core (checkpoint-compatible TADCModule)
-        enhanced_seq = self.tadc(x_aligned, raw_diff)
-
-        # Residual connection
-        residual = self.shortcut(enhanced_seq)
-
-        # Encode with convolutions
-        out = self.conv1(enhanced_seq)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        # CBAM attention
-        out = self.ca(out) * out
-        out = self.sa(out) * out
-
-        # Residual add
-        out = out + residual
-        dynamic_feat = self.relu(out)
-
-        return dynamic_feat
+    def forward(self, aligned_sequence, raw_difference):
+        """Return ``F_dyna`` with shape ``[B, C, H, W]``."""
+        enhanced_sequence = self.radc(aligned_sequence, raw_difference)
+        residual = self.shortcut(enhanced_sequence)
+        dynamic_feature = self.bn2(
+            self.conv2(self.relu(self.bn1(self.conv1(enhanced_sequence))))
+        )
+        dynamic_feature = self.channel_attention(dynamic_feature) * dynamic_feature
+        dynamic_feature = self.spatial_attention(dynamic_feature) * dynamic_feature
+        return self.relu(dynamic_feature + residual)
 
 
-__all__ = ['DynamicPath']
+__all__ = ["DynamicPath"]

@@ -62,6 +62,7 @@ except ImportError:
 
 # Import local modules
 from model.deep_dig import build_deep_dig
+from model.checkpoint import load_deepdig_checkpoint
 from utils.metric import compute_metric, get_keypoints
 from utils.loss import AverageMeter
 from datautils.dataloader import build_dataloader
@@ -211,7 +212,7 @@ def test():
     from model.deep_dig import build_deep_dig
 
     model = build_deep_dig(
-        input_channels=args.in_channels,
+        sequence_length=args.in_channels,
         deep_supervision=args.deep_supervision,
         detection_channels=args.detection_channels,
         with_cache=True,
@@ -222,17 +223,7 @@ def test():
     # Load weights
     print(f"\nLoad model: {args.ckpt}")
     ckpt = torch.load(args.ckpt, map_location='cpu', weights_only=False)
-    if isinstance(ckpt, dict) and ckpt.get('pipeline_ablation', 'full') != 'full':
-        raise ValueError('This entry point requires a complete DBA + RADC + MAG checkpoint')
-    state_dict = ckpt.get('state_dict', ckpt)
-
-    from collections import OrderedDict
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        name = k[7:] if k.startswith('module.') else k
-        new_state_dict[name] = v
-
-    model.load_state_dict(new_state_dict, strict=True)
+    load_deepdig_checkpoint(model, ckpt)
     model.eval()
     print("  Model loaded successfully")
 
@@ -296,7 +287,7 @@ def test():
             args.base_size, args.base_size, device=device
         )
         for _ in range(WARMUP_BATCHES):
-            _ = model(dummy_w, extract_xfeat=False, align_mode='descriptor')
+            _ = model(dummy_w, extract_descriptors=False, align_mode='descriptor')
     if device.type == 'cuda':
         torch.cuda.synchronize()
     print("  Warm-up completed")
@@ -342,7 +333,7 @@ def test():
                 torch.cuda.synchronize()
             t0 = time.perf_counter()
 
-            result = model(data, extract_xfeat=False, align_mode='descriptor')
+            result = model(data, extract_descriptors=False, align_mode='descriptor')
 
             if device.type == 'cuda':
                 torch.cuda.synchronize()
@@ -361,6 +352,11 @@ def test():
                 pred = preds[-1]
             else:
                 pred = preds
+
+            if not torch.isfinite(pred).all():
+                raise FloatingPointError(
+                    f'Non-finite model prediction in test batch {batch_idx}'
+                )
 
             # Adjust to original size
             pred_for_metric = crop_to_original_size(pred, args.dataset, args.resize_mode)
