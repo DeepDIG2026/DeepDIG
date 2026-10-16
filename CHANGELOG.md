@@ -57,3 +57,32 @@ Validation for this update:
 - Hand-computable cases cover empty GT with and without predictions, unequal target counts, and unequal image areas, distinguishing frame averages from count-weighted alternatives.
 - The updated entry point also runs two real GPU inference frames per dataset. All six prediction images are byte-identical to the corresponding earlier full-test predictions, and the five output scores match the historical protocol on those frames. These partial runs are execution checks, not new dataset-level accuracy measurements.
 - Python parsing, CLI help and `git diff --check` pass.
+
+## Manuscript presentation update (2026-10-16)
+
+Align the project presentation with the supplied TMM manuscript. Public results and figures follow the paper; the existing inference and evaluation protocol is retained.
+
+| File / content | Previous presentation | Updated presentation / source |
+|---|---|---|
+| `README.md`: overview and method | Incomplete author/method overview and implementation-focused descriptions. | Adds the manuscript authors, submission status, DBA/RATA/CADC/MAG explanations, and a source map (pages 1-5). |
+| `README.md`: LMIRSTD | Basic split, resolution and SCR information. | Adds target-size proportions, panorama explanation and the Table I NIBD statistics (pages 5-6). |
+| `README.md`: results | Earlier comparison image, hidden obsolete numerical table and partial efficiency summary. | Uses the supplied Table II, adds the complete-model summary, Table III efficiency and Table IV alignment-method comparison (pages 7-9); removes the obsolete duplicate and implementation-validation result tables. |
+| `README.md`: analysis and training | No dedicated sections for these experiments or the two-stage schedule. | Adds alignment, sensitivity, intermediate features and RATA accumulation analyses, plus the paper's two-stage training settings (pages 6-9). |
+| `README.md`: inference commands | Relied on default frame count and device. | Explicitly shows 20-frame GPU inference; retains batch size 2, preprocessing, dataset layout, checkpoint loading and the agreed metric definitions. |
+| `assets/results_tmm.png` | Earlier Table II. | Direct 300-dpi crop of Table II, page 7. |
+| `assets/comparison_tmm.png` | Earlier six-row qualitative comparison. | Direct 300-dpi crop of the eight-row Figure 8, page 8. |
+| `assets/alignment_example_tmm.png` | Absent. | Figure 1, page 1. |
+| `assets/panorama_tmm.png` | Absent. | Figure 7, page 6. |
+| `assets/alignment_analysis_tmm.png` | Absent. | Figure 9, page 9. |
+| `assets/sensitivity_temporal_tmm.png` | Absent. | Figure 10, page 9. |
+| `assets/sensitivity_kernel_tmm.png` | Absent. | Figure 11, page 9. |
+| `assets/feature_visualization_tmm.png` | Absent. | Figure 12, page 9. |
+| `assets/rata_comparison_tmm.png` | Absent. | Figure 13, page 9. |
+| `model/DBA_module.py` | Descriptor-Based Alignment. | Deep Background Alignment, matching the paper. |
+| `model/MAG_module.py` | Motion-Aware Gating; older dynamic-path names in ablation comments. | Motion-guided Adaptive Gating; RADC in those comments. |
+| `model/__init__.py` | Earlier title and DBA/MAG expansions. | Paper title and module terminology; retains all exports. |
+| `model/deep_dig.py` | Earlier title, TADC path label and scalar-branch description. | Paper title, RADC path label and regional temporal-gate description. |
+| `model/dynamic_path.py` | TADC terminology in descriptions. | RADC/RATA/CADC terminology, with the existing class names and attribution retained. |
+| `CHANGELOG.md` | No record of this presentation revision. | Records each updated file and its paper source. |
+
+All new figure assets are direct crops of the supplied PDF. Existing architecture, RATA, CADC, MAG and dataset illustrations are retained. Source edits affect only comments and docstrings: computational ASTs, checkpoint keys, model defaults, `test_deepdig.py`, `utils/metric.py`, data loading and dependencies are unchanged. Validation checks Python parsing, executable-AST equality, README local links, paper table values, figure crop boundaries and `git diff --check`.

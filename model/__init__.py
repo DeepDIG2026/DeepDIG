@@ -1,17 +1,17 @@
 """
-DeepDIG: Deep Infrared Small Target Detection.
+DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better.
 
 Multi-branch spatio-temporal framework for infrared small moving target detection.
 
 Modules:
     - RADC: RATA + CADC (the checkpoint-compatible TADCModule)
-    - MAG: Motion-Aware Gating (MotionGuidedGatingFusion)
-    - DBA: Descriptor-Based Alignment
+    - MAG: Motion-guided Adaptive Gating (MotionGuidedGatingFusion)
+    - DBA: Deep Background Alignment
     - StaticPath, DifferencePath, DynamicPath
     - DetectionNetwork (MSHNet-based)
 """
 
-# TADC Module (accumulated_kernel)
+# RADC core (checkpoint-compatible TADCModule)
 from .TADC_module import TADCModule, AdaptiveDiffAccumulator
 
 # Dynamic Path
@@ -49,7 +49,7 @@ from .UNet_CBAM import Up_CBAM, DoubleConv, Down, OutConv
 
 
 __all__ = [
-    # TADC Module
+    # RADC core
     'TADCModule',
     'AdaptiveDiffAccumulator',
 

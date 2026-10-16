@@ -1,5 +1,5 @@
 """
-Motion-Aware Gating (MAG) Module.
+Motion-guided Adaptive Gating (MAG) Module.
 
 Fuses static, differential, and dynamic features through motion-guided
 gating mechanism followed by attention-based refinement.
@@ -149,7 +149,7 @@ class FusionRefine(nn.Module):
 
 class MAGModule(nn.Module):
     """
-    Motion-Aware Gating module for multi-path feature fusion.
+    Motion-guided Adaptive Gating module for multi-path feature fusion.
 
     This implements the MotionGuidedGatingFusion (MGGF) from original STDMANet.
 
@@ -190,7 +190,7 @@ class MAGModule(nn.Module):
             static_feat: Static path feature [B, C, H, W]
             diff_feat: Differential path feature [B, C, H, W]
             dynamic_feat: Dynamic path feature [B, C, H, W], or None for
-                DBA+MAG ablation without ADA/TADC.
+                DBA+MAG ablation without RADC.
             raw_diff: Raw frame differences [B, T-1, H, W] (required for gate)
 
         Returns:
@@ -203,7 +203,7 @@ class MAGModule(nn.Module):
         static_out = self.static_enhance(static_feat, raw_diff)
         if dynamic_feat is None:
             # Keep the checkpoint-compatible 3-branch fusion input while
-            # removing any Dynamic/TADC signal from the DBA+MAG ablation.
+            # removing any dynamic-path/RADC signal from the DBA+MAG ablation.
             dynamic_out = torch.zeros_like(static_out)
         else:
             dynamic_out = self.dynamic_enhance(dynamic_feat, raw_diff)

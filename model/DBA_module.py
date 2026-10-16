@@ -1,5 +1,5 @@
 """
-Descriptor-Based Alignment (DBA) Module.
+Deep Background Alignment (DBA) Module.
 
 Computes homography matrix from descriptor matching between frame pairs.
 """
@@ -37,7 +37,7 @@ class InterpolateSparse2d(nn.Module):
 
 class DBAModule(nn.Module):
     """
-    Descriptor-Based Alignment module.
+    Deep Background Alignment module.
     
     Computes homography matrix by matching descriptors between source 
     and target frames. Does NOT perform the actual warping.

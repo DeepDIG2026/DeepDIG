@@ -1,15 +1,17 @@
 """
-Dynamic Path (matching STDMANet's Dynamic_block + AccumulatedKernelADKE).
+Dynamic Path with Reliability-Aware Dynamic Convolution (RADC).
 
-Contains TADC Module and Feature Encoder with CBAM for temporal motion feature enhancement.
+Contains the RADC core (TADCModule) and Feature Encoder with CBAM for temporal motion feature enhancement.
 
-Data flow (see Figure 2 & Figure 3):
+The feature encoder follows STDMANet's Dynamic_block structure.
+
+Data flow (paper Figures 2-4):
     X_aligned [B, T, H, W] (DBA-aligned sequence)
     raw_diff [B, T-1, H, W] (raw differences, from Difference Path)
         │
         ▼
     ┌─────────────────┐
-    │   TADC Module   │  (difference accumulation → kernel generation → temporal enhancement)
+    │    RADC core    │  (RATA aggregation → CADC kernel generation and enhancement)
     └────────┬────────┘
              │
              ▼
@@ -66,18 +68,18 @@ class SpatialAttention(nn.Module):
 
 class DynamicPath(nn.Module):
     """
-    Dynamic Path (matching STDMANet's Dynamic_block + AccumulatedKernelADKE).
+    Dynamic Path with Reliability-Aware Dynamic Convolution (RADC).
 
-    Contains TADC Module and Feature Encoder with CBAM attention.
+    Contains the RADC core (TADCModule) and Feature Encoder with CBAM attention.
 
     Components:
-        1. TADC Module: Temporal Accumulated Dynamic Convolution enhancement
+        1. RADC core: RATA aggregation followed by CADC enhancement
         2. Feature Encoder: Conv + CBAM encodes enhanced sequence to features
 
     Data flow:
         X_aligned [B, T, H, W] + raw_diff [B, T-1, H, W]
             ↓
-        TADC Module (accumulate → kernel generation → enhance)
+        RADC core (RATA → CADC → enhance)
             ↓
         enhanced_seq [B, T, H, W]
             ↓
@@ -88,8 +90,8 @@ class DynamicPath(nn.Module):
     Args:
         seq_len: Input sequence length T
         out_channels: Output feature channels (default: 64)
-        kernel_size: TADC module kernel size (default: 3)
-        reduction: TADC module channel reduction ratio (default: 4)
+        kernel_size: CADC kernel size (default: 3)
+        reduction: RADC core channel reduction ratio (default: 4)
         accumulator_use_global: Forwarded to TADCModule -> AdaptiveDiffAccumulator
             for ablation studies. Default True.
         accumulator_use_spatial: Forwarded to TADCModule -> AdaptiveDiffAccumulator
@@ -103,7 +105,7 @@ class DynamicPath(nn.Module):
         self.seq_len = seq_len
         self.out_channels = out_channels
 
-        # TADC Module
+        # RADC core (checkpoint-compatible TADCModule)
         self.tadc = TADCModule(
             seq_len=seq_len,
             kernel_size=kernel_size,
@@ -141,7 +143,7 @@ class DynamicPath(nn.Module):
         Returns:
             F_dynamic: [B, C, H, W] dynamic features
         """
-        # TADC Module
+        # RADC core (checkpoint-compatible TADCModule)
         enhanced_seq = self.tadc(x_aligned, raw_diff)
 
         # Residual connection

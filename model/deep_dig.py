@@ -1,12 +1,12 @@
 """
-DeepDIG: Deep Infrared Small Target Detection.
+DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better.
 
 Multi-branch spatio-temporal framework for infrared small moving target detection.
 
 Architecture:
     Static Path (DualTaskUNet) → F_static [B, C, H, W]
     Difference Path → F_diff [B, C, H, W] + raw_diff [B, T-1, H, W]
-    Dynamic Path (TADC) → F_dynamic [B, C, H, W]
+    Dynamic Path (RADC: RATA + CADC) → F_dynamic [B, C, H, W]
     MAG Module → F_fused [B, C, H, W]
     Detection Network → output [B, 1, H, W]
 """
@@ -34,7 +34,7 @@ class DeepDIG(nn.Module):
         deep_supervision: Enable deep supervision (default: False)
         detection_channels: Feature channels (default: 64)
         accumulator_use_global: Forwarded to DynamicPath. If False the
-            AdaptiveDiffAccumulator's per-diff scalar branch is disabled
+            AdaptiveDiffAccumulator's regional temporal gate is disabled
             (ablation study).
         accumulator_use_spatial: Forwarded to DynamicPath. If False the
             AdaptiveDiffAccumulator's per-pixel spatial gate is disabled
@@ -67,7 +67,7 @@ class DeepDIG(nn.Module):
             out_channels=detection_channels
         )
 
-        # Dynamic Path (TADC)
+        # Dynamic Path (RADC: RATA + CADC)
         self.dynamic_path = DynamicPath(
             seq_len=input_channels,
             out_channels=detection_channels,
@@ -117,7 +117,7 @@ class DeepDIG(nn.Module):
         # Difference Path
         diff_feat, raw_diff = self.difference_path(x_seq)
 
-        # Dynamic Path (TADC)
+        # Dynamic Path (RADC: RATA + CADC)
         if self.use_dynamic_path:
             dynamic_feat = self.dynamic_path(x_seq, raw_diff)
         else:
@@ -326,8 +326,8 @@ def build_deep_dig(
         min_matches: Minimum matches for alignment
         descriptor_threshold: Keypoint detection threshold
         max_keypoints: Maximum keypoints
-        accumulator_use_global: Toggle the AdaptiveDiffAccumulator's per-diff
-            scalar branch (ablation flag, default True).
+        accumulator_use_global: Toggle the AdaptiveDiffAccumulator's regional
+            temporal gate (ablation flag, default True).
         accumulator_use_spatial: Toggle the AdaptiveDiffAccumulator's
             per-pixel spatial gate (ablation flag, default True).
 
