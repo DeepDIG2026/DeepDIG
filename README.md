@@ -2,7 +2,7 @@
 
 DeepDIG detects infrared small targets in moving-camera video through background alignment and spatiotemporal modeling.
 
-This repository provides the **DBA + RADC + MAG** model, [evaluation code](test_deepdig.py) and [pretrained checkpoints](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1). Figures and results below are from the paper; please refer to it for method details.
+This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints. Figures and results below are from the paper; please refer to it for method details.
 
 <p align="center">
   <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="760">
@@ -89,14 +89,6 @@ Table II compares methods on IRDST, TSIRMT and LMIRSTD. **Fa is in units of $10^
   <img src="assets/results_tmm.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
 </p>
 
-The complete **DeepDIG (DBA + RADC + MAG)** results reported in Table II are:
-
-| Dataset | Pd ↑ | Fa ↓ | IoU ↑ | nIoU ↑ | F1 ↑ |
-|---|---:|---:|---:|---:|---:|
-| IRDST | 98.92 | 14.67 | 63.26 | 66.04 | 98.17 |
-| TSIRMT | 92.66 | 35.55 | 73.09 | 73.11 | 94.72 |
-| LMIRSTD | 91.24 | 1.87 | 80.66 | 74.80 | 89.76 |
-
 ### Qualitative comparison
 
 <p align="center">
@@ -111,14 +103,14 @@ Table III reports full-pipeline efficiency, including background alignment and i
 
 | Method | FPS ↑ | Parameters | GFLOPs |
 |---|---:|---:|---:|
-| STDMANet | 4.37 | 11.88M | 62.98 |
+| STDMANet | 4.37 | **11.88M** | 62.98 |
 | LMAFormer | 0.65 | 407.67M | 615.96 |
 | TDCNet | 2.90 | 40.46M | 3822.91 |
 | DeepDIG | **9.15** | 15.21M | **33.14** |
 
 ### Background alignment
 
-Figure 9 tests synthetic homography perturbations with maximum corner displacements of 10%, 30% and 50% of image size on LMIRSTD. DeepDIG achieves 100% alignment success at these tested levels and **5.54 ms per image pair**.
+Figure 9 reports **100% alignment success** for DeepDIG under the three tested synthetic homography levels on LMIRSTD and **5.54 ms per image pair**.
 
 <p align="center">
   <img src="assets/alignment_analysis_tmm.png" alt="Figure 9: alignment success rate and pairwise alignment time" width="900">
@@ -152,13 +144,13 @@ Figures 12–13 show intermediate features and compare uniform accumulation with
 
 Download the three complete DeepDIG checkpoints from the [Google Drive weights folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1):
 
-| Dataset | Filename | Download |
-|---|---|---|
-| IRDST | `DeepDIG_IRDST.pth` | [Google Drive](https://drive.google.com/file/d/1YDaETLzq8jLxdrmsiBS2phqqDlSqkPXK/view?usp=drive_link) |
-| TSIRMT | `DeepDIG_TSIRMT.pth` | [Google Drive](https://drive.google.com/file/d/1X0BZeTG_xEqHeNqKewZ425XVXJNfAKp9/view?usp=drive_link) |
-| LMIRSTD | `DeepDIG_LMIRSTD.pth` | [Google Drive](https://drive.google.com/file/d/1QBT4TOWqMI5HNjlxSLj3zfP7yT3AWAkg/view?usp=drive_link) |
+| Dataset | Filename |
+|---|---|
+| IRDST | `DeepDIG_IRDST.pth` |
+| TSIRMT | `DeepDIG_TSIRMT.pth` |
+| LMIRSTD | `DeepDIG_LMIRSTD.pth` |
 
-Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The [checkpoint loader](model/checkpoint.py) accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, automatically maps published checkpoint keys to the RADC module names, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
+Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The checkpoint loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, automatically maps published checkpoint keys to the RADC module names, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
 
 Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the validation environment. Install the appropriate PyTorch build first:
 
