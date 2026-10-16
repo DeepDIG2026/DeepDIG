@@ -1,8 +1,5 @@
 <h1 align="center">DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better</h1>
 
-<p align="center">Wufan Wang, Haixin Li, Baiwen Zeng, Chenzhi Zhao, Zhiqiang Yu, Bo Zhang, Hui Gao, and Wendong Wang</p>
-<p align="center">Manuscript submitted to <strong>IEEE Transactions on Multimedia (TMM)</strong>.</p>
-
 DeepDIG detects infrared small targets in moving-camera video through background alignment and spatiotemporal modeling.
 
 This repository provides the **DBA + RADC + MAG** model, [evaluation code](test_deepdig.py) and [pretrained checkpoints](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1). Figures and results below are from the paper; please refer to it for method details.
