@@ -3,14 +3,9 @@
 <p align="center">Wufan Wang, Haixin Li, Baiwen Zeng, Chenzhi Zhao, Zhiqiang Yu, Bo Zhang, Hui Gao, and Wendong Wang</p>
 <p align="center">Manuscript submitted to <strong>IEEE Transactions on Multimedia (TMM)</strong>.</p>
 
-DeepDIG detects small infrared targets in video sequences with camera ego-motion and complex background dynamics. It aligns the background before modeling target motion, then combines spatial appearance and temporal cues to preserve weak targets and suppress interference.
+DeepDIG detects infrared small targets in moving-camera video through background alignment and spatiotemporal modeling.
 
-- **Deep Background Alignment (DBA):** Reuses intermediate spatial features to construct deep local descriptors for cross-frame alignment.
-- **Reliability-Aware Dynamic Convolution (RADC):** Combines Reliability-Aware Temporal Aggregation (RATA) and Content-Adaptive Dynamic Convolution (CADC) to suppress alignment-induced artifacts and refine temporal representations.
-- **Motion-guided Adaptive Gating (MAG):** Adaptively integrates spatial and temporal features using motion guidance.
-- **LMIRSTD:** A multi-frame infrared small target detection dataset with pronounced background motion and dim targets.
-
-This repository provides the complete **DBA + RADC + MAG** inference model, including both RATA gates, and the evaluation entry point [test_deepdig.py](test_deepdig.py). Download the [pretrained checkpoints](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1) for the three datasets. The figures and experimental results presented below are from the manuscript.
+This repository provides the **DBA + RADC + MAG** model, [evaluation code](test_deepdig.py) and [pretrained checkpoints](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1). Figures and results below are from the paper; please refer to it for method details.
 
 <p align="center">
   <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="760">
@@ -22,23 +17,15 @@ This repository provides the complete **DBA + RADC + MAG** inference model, incl
   <img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="1000">
 </p>
 
-DeepDIG takes a sequence of infrared frames and predicts a target probability map for the current frame. The static path extracts spatial features. DBA aligns historical frames with the current frame using descriptors derived from the static encoder. The difference path encodes inter-frame changes, while the dynamic path refines the aligned sequence through RADC. MAG fuses the static, difference and dynamic features before the detection head produces the final prediction.
+DeepDIG aligns historical frames to the current frame and combines static, difference and dynamic features for target detection.
 
 ### Deep Background Alignment (DBA)
 
-DBA builds on the intermediate features of the static-branch encoder. An XFeat-based head predicts local descriptors, keypoint locations and reliability scores. Descriptor matching, subpixel refinement and RANSAC provide a homography for warping historical frames into the current frame's coordinate system.
+DBA reuses static-encoder features to construct deep descriptors for cross-frame background alignment.
 
 ### Reliability-Aware Dynamic Convolution (RADC)
 
-RADC consists of **RATA** and **CADC**. RATA estimates the reliability of inter-frame differences, and CADC uses the resulting motion prior to refine the aligned sequence.
-
-**RATA.** Given absolute difference maps $D_i = |I_t-I_i|$, RATA accumulates motion as
-
-$$F_{\mathrm{accum}} = \sum_i (W_i^r \odot W_i^p) \odot D_i.$$
-
-The regional gate uses Top-K statistics (mean, standard deviation, maximum and peak-to-mean ratio), temporal position encoding and a learned temporal prior. The pixel-wise gate uses difference magnitude, temporal anomaly, local contrast and peak dominance. Both use bounded residual weighting of the form $1+\alpha\tanh(z)$, allowing attenuation and enhancement around unit weighting. Top-K selection constructs regional descriptors; all pixels remain in the weighted accumulation.
-
-**CADC.** The normalized accumulated motion guides parallel dilated convolutions with dilation rates 1, 2 and 4. A kernel prediction head produces spatially varying dynamic coefficients using sigmoid scaling and a positive offset. These motion-conditioned kernels refine the aligned frames, and the dynamic encoder produces features for fusion.
+RADC combines **Reliability-Aware Temporal Aggregation (RATA)** and **Content-Adaptive Dynamic Convolution (CADC)** to refine temporal features using reliable motion cues.
 
 <table align="center">
   <tr><th>RATA (Figure 3)</th><th>CADC (Figure 4)</th></tr>
@@ -50,7 +37,7 @@ The regional gate uses Top-K statistics (mean, standard deviation, maximum and p
 
 ### Motion-guided Adaptive Gating (MAG)
 
-MAG uses inter-frame difference information to guide the enhancement of static and dynamic features. The enhanced features are combined with the difference features and refined through a residual attention block, providing the detection head with complementary spatial and temporal information.
+MAG uses inter-frame differences to guide adaptive fusion of spatial and temporal features.
 
 <p align="center">
   <img src="assets/mag_tmm.png" alt="Figure 5: Motion-guided Adaptive Gating" width="850">
@@ -69,13 +56,11 @@ MAG uses inter-frame difference information to guide the enhancement of static a
 | MAG | [MAG_module.py](model/MAG_module.py) |
 | Detection head | [detection_network.py](model/detection_network.py) |
 
-`AdaptiveDiffAccumulator` implements RATA. The `TADCModule` class and existing parameter paths are retained for checkpoint compatibility; together, its aggregation and dynamic-convolution components implement the RADC core.
-
 ## LMIRSTD Dataset
 
-The **Large-motion Multi-frame IRST Detection (LMIRSTD)** dataset contains **60 real-world infrared sequences**, split into **45 training sequences and 15 test sequences**. Each sequence contains 200 frames at **640×512** resolution (width×height), for **12,000 frames** in total. Scenes include cloudy skies, urban areas, forests, mountains and lakes under different seasons and illumination conditions.
+The **Large-motion Multi-frame IRST Detection (LMIRSTD)** dataset contains **60 infrared sequences** (**45 training / 15 test**), with 200 frames per sequence at **640×512** resolution (width×height), totaling **12,000 frames**.
 
-LMIRSTD combines pronounced camera-induced background motion with dim, low-contrast targets. Its mean signal-to-clutter ratio (SCR) is **2.25**. Small, medium and large targets account for **32.0%, 50.6% and 17.4%**, respectively.
+LMIRSTD features pronounced background motion and dim targets, with mean SCR **2.25**. Small, medium and large targets account for **32.0%, 50.6% and 17.4%**, respectively.
 
 <p align="center">
   <img src="assets/dataset_tmm.png" alt="Figure 6: typical LMIRSTD backgrounds; green boxes indicate true targets" width="1000">
@@ -85,9 +70,9 @@ LMIRSTD combines pronounced camera-induced background motion with dim, low-contr
   <img src="assets/panorama_tmm.png" alt="Figure 7: panoramas stitched from 50 consecutive LMIRSTD frames" width="1000">
 </p>
 
-The panoramas are stitched from **50 consecutive frames**. Each red box shows the spatial extent of a single 640×512 frame.
+Panoramas use **50 consecutive frames**; red boxes mark individual 640×512 frames.
 
-The dataset comparison in Table I reports normalized inter-frame background displacement (NIBD): the mean displacement of a fixed 20×20 grid under the estimated background similarity transform, divided by the image diagonal and expressed as a percentage. P50 and P95 are the median and 95th percentile over accepted adjacent-frame pairs; screening coverage is the percentage of candidate pairs passing geometric checks.
+Table I reports normalized inter-frame background displacement (NIBD): mean displacement of a 20×20 grid under the estimated background similarity transform, as a percentage of the image diagonal. P50/P95 are the median/95th percentile over accepted adjacent-frame pairs; screening coverage is the fraction passing geometric checks.
 
 | Dataset | Mean SCR | Background motion | NIBD P50 (% diagonal/frame) | NIBD P95 (% diagonal/frame) | Screening coverage (%) |
 |---|---:|---|---:|---:|---:|
@@ -101,7 +86,7 @@ Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folder
 
 ### Quantitative comparison
 
-Table II compares single-frame and multi-frame methods on IRDST, TSIRMT and LMIRSTD. The complete table is reproduced directly from the manuscript. **Fa is in units of $10^{-6}$; all other metrics are percentages.**
+Table II compares methods on IRDST, TSIRMT and LMIRSTD. **Fa is in units of $10^{-6}$; all other metrics are percentages.**
 
 <p align="center">
   <img src="assets/results_tmm.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
@@ -121,7 +106,7 @@ The complete **DeepDIG (DBA + RADC + MAG)** results reported in Table II are:
   <img src="assets/comparison_tmm.png" alt="Figure 8: eight qualitative examples comparing DeepDIG with representative methods" width="1000">
 </p>
 
-Columns show the input, UIUNet, DNANet, STDMANet, LMAFormer, DTUM, DeepPro-Plus, TDCNet, DeepDIG and ground truth. Red, blue and yellow boxes mark correct detections, missed targets and false alarms; corner insets enlarge challenging regions.
+Red, blue and yellow boxes mark correct detections, missed targets and false alarms, respectively.
 
 ### Efficiency
 
@@ -136,7 +121,7 @@ Table III reports full-pipeline efficiency, including background alignment and i
 
 ### Background alignment
 
-Figure 9 evaluates synthetic homography perturbations of LMIRSTD test images. Easy, medium and hard settings use maximum corner displacements of 10%, 30% and 50% of image size. The paper reports 100% alignment success for DeepDIG at these three tested levels and **5.54 ms per image pair**.
+Figure 9 tests synthetic homography perturbations with maximum corner displacements of 10%, 30% and 50% of image size on LMIRSTD. DeepDIG achieves 100% alignment success at these tested levels and **5.54 ms per image pair**.
 
 <p align="center">
   <img src="assets/alignment_analysis_tmm.png" alt="Figure 9: alignment success rate and pairwise alignment time" width="900">
@@ -152,33 +137,19 @@ Table IV compares alignment methods on **IRDST**, with RADC and MAG retained:
 
 ### Sensitivity and feature analysis
 
-The reported IRDST sensitivity experiments study temporal window length, residual-gate scaling, Top-K pooling and dynamic-kernel size. Among the tested settings, the paper selects **N=20**, **α=0.5**, **K=40** and a **3×3** kernel.
+The IRDST sensitivity experiments select **N=20**, **α=0.5**, **K=40** and a **3×3** kernel among the tested settings.
 
 <p align="center">
   <img src="assets/sensitivity_temporal_tmm.png" alt="Figure 10: sensitivity to temporal window length and residual-gate scaling" width="900">
   <img src="assets/sensitivity_kernel_tmm.png" alt="Figure 11: sensitivity to Top-K pooling and dynamic-kernel size" width="900">
 </p>
 
-Figure 12 visualizes the input, static features, inter-frame differences, and features after RADC and MAG. Figure 13 compares uniform difference accumulation with RATA. Green boxes indicate true targets.
+Figures 12–13 show intermediate features and compare uniform accumulation with RATA. Green boxes mark true targets.
 
 <p align="center">
   <img src="assets/feature_visualization_tmm.png" alt="Figure 12: intermediate features from RADC and MAG" width="950">
   <img src="assets/rata_comparison_tmm.png" alt="Figure 13: uniform accumulation versus RATA" width="950">
 </p>
-
-## Training described in the paper
-
-DeepDIG is trained in two stages. The first jointly optimizes the static branch and an XFeat-based descriptor head. The second freezes these components and trains the difference path, dynamic path, fusion module and detection head.
-
-| Setting | Stage 1: static branch and descriptors | Stage 2: temporal modeling and detection |
-|---|---|---|
-| Duration | 150,000 iterations | 50 epochs |
-| Batch size | 8 | 2 |
-| Learning rate | 3×10⁻⁴ | 1×10⁻³, cosine annealed to 1×10⁻⁴ |
-| Input size (width×height) | 640×512 | IRDST/TSIRMT: 256×256; LMIRSTD: 640×512 |
-| Objective | Soft-IoU for static detection; descriptor similarity, reliability, fine matching and keypoint losses | Soft-IoU |
-
-The paper uses Adam and Soft-IoU smoothing of **1×10⁻⁵**. Stage 1 includes homography and thin-plate spline augmentation. RATA uses **M=2** temporal frequency pairs; the dynamic-kernel and MAG gating functions use **γ=10** and positive offset **ε=0.1**. The reported training environment is **PyTorch 2.4.1 / CUDA 12.1** on an **NVIDIA RTX 4090D**. This repository provides the model and inference/evaluation code.
 
 ## Installation and checkpoints
 
