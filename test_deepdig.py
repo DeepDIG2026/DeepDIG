@@ -470,7 +470,13 @@ def test():
     f1 = 2.0 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     fps = 1.0 / infer_time_meter.avg if infer_time_meter.avg > 0 else 0.0
     iou = total_intersection / total_union if total_union else 0.0
-    niou = float(np.mean(frame_ious)) if frame_ious else 0.0
+    # Match the historical metric.py / test protocol for the primary scores.
+    # compute_miou already assigns 1 when both prediction and GT are empty.
+    niou = metric_values['mIoU'].avg
+    pd_frame_mean = metric_values['PD'].avg
+    fa_frame_mean = metric_values['FA'].avg
+    # Retain the previous aggregation policies under explicit diagnostic names.
+    niou_empty_zero = float(np.mean(frame_ious)) if frame_ious else 0.0
     pd_accumulated = detected_targets / total_targets if total_targets else 0.0
     fa_accumulated = false_pixels / total_pixels if total_pixels else 0.0
 
@@ -478,11 +484,13 @@ def test():
     print("\n" + "=" * 80)
     print("Test Results")
     print("=" * 80)
+    print("  Metric policy: legacy_frame_mean_v1 (empty-union nIoU = 1)")
     print(f"  Precision:  {precision:.4f}")
     print(f"  Recall:     {recall:.4f}")
     print(f"  F1:         {f1:.4f}")
-    print(f"  PD:         {pd_accumulated:.4f}")
-    print(f"  FA:         {fa_accumulated:.8f}")
+    print(f"  PD:         {pd_frame_mean:.4f}")
+    print(f"  FA:         {fa_frame_mean:.8f}")
+    print(f"  FA_x1e6:    {fa_frame_mean * 1e6:.4f}")
     print(f"  IoU:        {iou:.4f}")
     print(f"  nIoU:       {niou:.4f}")
     print(f"  mIoU:       {metric_values['mIoU'].avg:.4f}")
@@ -503,15 +511,21 @@ def test():
         with open(result_path, 'w') as f:
             f.write(f"Dataset: {args.dataset}\n")
             f.write(f"Checkpoint: {args.ckpt}\n")
+            f.write("MetricPolicy: legacy_frame_mean_v1\n")
             f.write(f"Precision: {precision:.4f}\n")
             f.write(f"Recall: {recall:.4f}\n")
             f.write(f"F1: {f1:.4f}\n")
-            f.write(f"PD: {pd_accumulated:.8f}\n")
-            f.write(f"FA: {fa_accumulated:.12f}\n")
+            f.write(f"PD: {pd_frame_mean:.8f}\n")
+            f.write(f"FA: {fa_frame_mean:.12f}\n")
+            f.write(f"FA_x1e6: {fa_frame_mean * 1e6:.8f}\n")
             f.write(f"IoU: {iou:.8f}\n")
             f.write(f"nIoU: {niou:.8f}\n")
             f.write(f"PD_frame_mean: {metric_values['PD'].avg:.8f}\n")
             f.write(f"FA_frame_mean: {metric_values['FA'].avg:.12f}\n")
+            f.write(f"PD_target_weighted: {pd_accumulated:.8f}\n")
+            f.write(f"FA_pixel_weighted: {fa_accumulated:.12f}\n")
+            f.write(f"nIoU_empty_zero: {niou_empty_zero:.8f}\n")
+            f.write("nIoU_empty_union_policy: 1\n")
             f.write(f"Frames: {len(frame_ious)}\n")
             f.write(f"EmptyUnionFrames: {empty_union_frames}\n")
             f.write(f"PartialTest: {bool(args.max_samples)}\n")
@@ -548,15 +562,21 @@ def test():
                             'device': str(device)},
             'source_sha256': {os.path.relpath(path, current_dir): sha256(path) for path in source_files},
             'metrics': {'Precision': precision, 'Recall': recall, 'F1': f1,
-                        'PD': pd_accumulated, 'FA': fa_accumulated, 'FA_x1e6': fa_accumulated * 1e6,
+                        'PD': pd_frame_mean, 'FA': fa_frame_mean, 'FA_x1e6': fa_frame_mean * 1e6,
                         'IoU': iou, 'nIoU': niou, 'mIoU_legacy': metric_values['mIoU'].avg,
-                        'PD_frame_mean': metric_values['PD'].avg, 'FA_frame_mean': metric_values['FA'].avg},
-            'metric_policy': {'prediction_threshold': 0.5, 'evaluation_resolution': 'original',
+                        'PD_frame_mean': pd_frame_mean, 'FA_frame_mean': fa_frame_mean,
+                        'PD_target_weighted': pd_accumulated, 'FA_pixel_weighted': fa_accumulated,
+                        'nIoU_empty_zero': niou_empty_zero},
+            'metric_policy': {'name': 'legacy_frame_mean_v1',
+                              'prediction_threshold': 0.5, 'evaluation_resolution': 'original',
                               'IoU': 'sum(intersection)/sum(union)',
-                              'nIoU': 'frame mean; empty union=0',
+                              'nIoU': 'frame mean; empty union=1 (same as historical mIoU)',
                               'mIoU_legacy': 'frame mean; empty union=1',
                               'F1': 'harmonic mean of frame-averaged precision and recall',
-                              'PD_FA': 'accumulated target/pixel counts'},
+                              'PD_FA': 'frame mean; historical metric.py definitions',
+                              'PD_target_weighted': 'sum(detected GT components)/sum(GT components)',
+                              'FA_pixel_weighted': 'sum(false pixels)/sum(image pixels)',
+                              'nIoU_empty_zero': 'diagnostic frame mean; empty union=0'},
             'performance': {'FPS': fps, 'infer_ms_per_sample': infer_time_meter.avg * 1000,
                             'total_params': total_params, 'detector_GFLOPs': gflops,
                             'timing_scope': 'DBA alignment and detection; excludes loading and postprocessing',

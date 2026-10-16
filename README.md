@@ -230,14 +230,18 @@ with torch.no_grad():
 
 ## Evaluation definitions
 
-Metrics use original-resolution predictions and threshold 0.5:
+The primary five metrics are **Pd, Fa, IoU, nIoU and F1**. The default policy is `legacy_frame_mean_v1`: it follows the historical `utils/metric.py` and frame-average test protocol, with global IoU also reported. Metrics use original-resolution predictions and threshold 0.5:
 
 - **IoU:** accumulated intersection divided by accumulated union over all frames.
-- **nIoU:** mean frame IoU; empty unions score 0.
-- **mIoU:** historical frame mean IoU; empty unions score 1, retained for comparison with training logs.
-- **Precision / Recall / F1:** rounded component centroids are greedily matched one-to-one within Euclidean distance of 3 original-image pixels. Precision/recall are averaged over frames; F1 is their harmonic mean. A frame with neither targets nor predictions scores 1 for precision and recall.
-- **Pd:** accumulated detected GT components divided by all GT components. A target is detected when a predicted pixel falls within a 3-pixel square neighborhood of any GT pixel. This pixel-neighborhood rule does not impose one-to-one component matching.
-- **Fa:** accumulated predicted pixels outside those GT neighborhoods divided by all evaluated image pixels. `FA_x1e6` is the manuscript display unit.
-- **PD_frame_mean / FA_frame_mean:** historical frame averages retained alongside accumulated Pd/Fa.
+- **nIoU:** mean frame IoU from the historical `compute_miou` function. A frame with neither GT foreground nor predicted foreground scores **1**; an empty-GT frame with any predicted foreground scores **0**. Every test frame participates in the mean.
+- **mIoU / mIoU_legacy:** aliases of nIoU, retained for comparison with historical training logs.
+- **Precision / Recall / F1:** rounded component centroids are greedily matched one-to-one within Euclidean distance of 3 original-image pixels. Precision/recall are averaged over frames; F1 is their harmonic mean. A frame with neither targets nor predictions scores 1 for precision and recall; if exactly one of the two sets is empty, both score 0.
+- **Pd:** arithmetic mean of per-frame detected-GT-component ratios. A target is detected when a predicted pixel falls within a 3-pixel square neighborhood of any GT pixel. This pixel-neighborhood rule does not impose one-to-one component matching. With no GT targets, the frame scores 1 if its prediction is also empty and 0 otherwise.
+- **Fa:** arithmetic mean of per-frame false-pixel ratios. Each ratio counts predicted foreground pixels outside those GT neighborhoods, divided by that frame's full image area. With empty GT, every predicted foreground pixel is a false alarm. `FA_x1e6` is Fa multiplied by `10^6` for table display.
+- **PD_frame_mean / FA_frame_mean:** aliases of the primary Pd/Fa values.
+
+For continuity with earlier result files, JSON and text outputs also include **PD_target_weighted** (total detected GT components / total GT components), **FA_pixel_weighted** (total false pixels / total image pixels), and **nIoU_empty_zero** (frame-average IoU with empty unions scored as 0). These are diagnostic alternatives, not the primary five scores. The policy name is written to both output formats and printed by the CLI; result files created before this change used different primary Pd/Fa/nIoU definitions.
+
+An empty-GT frame is a valid all-zero mask. A missing or unreadable GT file is an error. Frame-average scores depend on the number of empty frames, so compare methods using the same split and metric policy. The underlying matching functions, input windows and inference settings are unchanged by this aggregation update.
 
 FPS measures the complete model call, including DBA feature extraction, matching, warping and detection, while excluding loading, metrics and output writing. Optional THOP profiling uses pre-aligned input, excludes DBA, and counts two FLOPs per MAC; it is not a full-pipeline GFLOPs measurement.

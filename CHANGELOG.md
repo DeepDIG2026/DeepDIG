@@ -36,3 +36,24 @@ The three final public checkpoints and full-test reproduction of manuscript metr
 Use DeepDIG throughout the public documentation and source annotations. Remove private experimental labels from `README.md`, this changelog, `requirements.txt`, the CLI help/result-policy text in `test_deepdig.py`, and the docstrings in `model/TADC_module.py` and `model/__init__.py`. Dataset instructions use the published LMIRSTD name.
 
 This correction changes wording only. Network computation, configuration defaults, parameter names, checkpoint loading and metric formulas are unchanged; all Python sources still parse and the CLI help runs.
+
+## Historical evaluation policy (2026-10-16)
+
+The primary five test scores now use the agreed historical evaluation protocol. This changes score aggregation and reporting; model predictions, checkpoints, data loading and the matching functions in `utils/metric.py` are unchanged.
+
+| File / output | Previous behavior | Updated behavior / reason |
+|---|---|---|
+| `test_deepdig.py`: nIoU | Mean frame IoU with empty unions scored as 0. | Uses historical `compute_miou` frame averages: both GT and prediction empty scores 1. Matches the selected historical metric protocol exactly. |
+| `test_deepdig.py`: Pd / Fa | Primary values weighted by GT target counts / image pixel counts. | Primary values are arithmetic frame means from the historical metric functions, matching the historical test script. |
+| `test_deepdig.py`: diagnostics | Historical values were separate fields. | `mIoU_legacy`, `PD_frame_mean` and `FA_frame_mean` remain aliases; previous primary definitions are preserved as `nIoU_empty_zero`, `PD_target_weighted` and `FA_pixel_weighted`. |
+| `test_deepdig.py`: output metadata | No named aggregation policy; text did not explicitly record the nIoU empty-union rule. | Console, text and JSON identify `legacy_frame_mean_v1`; text records the empty-union rule and console/text include `FA_x1e6`. IoU remains accumulated intersection / union, and F1 remains the harmonic mean of frame-average precision and recall. |
+| `README.md` | Described empty-union-zero nIoU and accumulated Pd/Fa as primary metrics. | Defines all five primary scores, the empty-GT cases, diagnostic alternatives and compatibility with older result files. |
+| `CHANGELOG.md` | No record of this policy update. | Documents each changed output and its reason. |
+
+Validation for this update:
+
+- The inference and per-frame scoring portion of `test_deepdig.py` has an unchanged computational AST. Only this entry point and the two documentation files change; model, loader and metric-function files are unchanged.
+- The actual summary and console/text/JSON output code is exercised using all 834 IRDST, 6,000 TSIRMT and 3,000 LMIRSTD saved per-frame measurements. Every primary score matches the independently recorded historical-protocol results exactly. This is an aggregation replay, not a new full inference run.
+- Hand-computable cases cover empty GT with and without predictions, unequal target counts, and unequal image areas, distinguishing frame averages from count-weighted alternatives.
+- The updated entry point also runs two real GPU inference frames per dataset. All six prediction images are byte-identical to the corresponding earlier full-test predictions, and the five output scores match the historical protocol on those frames. These partial runs are execution checks, not new dataset-level accuracy measurements.
+- Python parsing, CLI help and `git diff --check` pass.
