@@ -186,9 +186,9 @@ Download the three complete DeepDIG checkpoints from the [Google Drive weights f
 
 | Dataset | Filename | Download |
 |---|---|---|
-| IRDST | `DeepDIG_IRDST.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1) |
-| TSIRMT | `DeepDIG_TSIRMT.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1) |
-| LMIRSTD | `DeepDIG_LMIRSTD.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1) |
+| IRDST | `DeepDIG_IRDST.pth` | [Google Drive](https://drive.google.com/file/d/1YDaETLzq8jLxdrmsiBS2phqqDlSqkPXK/view?usp=drive_link) |
+| TSIRMT | `DeepDIG_TSIRMT.pth` | [Google Drive](https://drive.google.com/file/d/1X0BZeTG_xEqHeNqKewZ425XVXJNfAKp9/view?usp=drive_link) |
+| LMIRSTD | `DeepDIG_LMIRSTD.pth` | [Google Drive](https://drive.google.com/file/d/1QBT4TOWqMI5HNjlxSLj3zfP7yT3AWAkg/view?usp=drive_link) |
 
 Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
 
