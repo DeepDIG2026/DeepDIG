@@ -10,7 +10,7 @@ DeepDIG detects small infrared targets in video sequences with camera ego-motion
 - **Motion-guided Adaptive Gating (MAG):** Adaptively integrates spatial and temporal features using motion guidance.
 - **LMIRSTD:** A multi-frame infrared small target detection dataset with pronounced background motion and dim targets.
 
-This repository provides the complete **DBA + RADC + MAG** inference model, including both RATA gates, and the evaluation entry point [test_deepdig.py](test_deepdig.py). Checkpoints for the three datasets will be published separately. The figures and experimental results presented below are from the manuscript.
+This repository provides the complete **DBA + RADC + MAG** inference model, including both RATA gates, and the evaluation entry point [test_deepdig.py](test_deepdig.py). Download the [pretrained checkpoints](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0) for the three datasets. The figures and experimental results presented below are from the manuscript.
 
 <p align="center">
   <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="760">
@@ -95,7 +95,7 @@ The dataset comparison in Table I reports normalized inter-frame background disp
 | TSIRMT | 3.04 | Mild | 0.460 | 0.918 | 99.50 |
 | LMIRSTD | 2.25 | Large | 0.329 | 1.020 | 96.71 |
 
-Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folders/1tv9GhDs2jT7N_RRtqT8z2lzg-IpnqTfL?usp=sharing).
+Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1).
 
 ## Paper Results
 
@@ -182,13 +182,13 @@ The paper uses Adam and Soft-IoU smoothing of **1×10⁻⁵**. Stage 1 includes 
 
 ## Installation and checkpoints
 
-The three complete DeepDIG checkpoints will be uploaded separately:
+Download the three complete DeepDIG checkpoints from the [Google Drive weights folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0):
 
-| Dataset | Example filename | Download |
+| Dataset | Filename | Download |
 |---|---|---|
-| IRDST | `DeepDIG_IRDST.pth` | Pending upload |
-| TSIRMT | `DeepDIG_TSIRMT.pth` | Pending upload |
-| LMIRSTD | `DeepDIG_LMIRSTD.pth` | Pending upload |
+| IRDST | `DeepDIG_IRDST.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0) |
+| TSIRMT | `DeepDIG_TSIRMT.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0) |
+| LMIRSTD | `DeepDIG_LMIRSTD.pth` | [Google Drive folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0) |
 
 Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
 
