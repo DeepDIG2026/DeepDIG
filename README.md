@@ -4,19 +4,18 @@ DeepDIG detects infrared small targets in moving-camera video through background
 
 This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints. Figures and results below are from the paper; please refer to it for method details.
 
-<p align="center">
-  <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="600">
-</p>
-
-<p align="center"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</p>
-
 ## Method
 
-<p align="center">
-  <img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="640">
-</p>
-
-<p align="center"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</p>
+<table align="center">
+  <tr>
+    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="460"></td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</td>
+    <td align="center" valign="top"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</td>
+  </tr>
+</table>
 
 ### Deep Background Alignment (DBA)
 
@@ -26,22 +25,21 @@ DBA reuses static-encoder features to construct deep descriptors for cross-frame
 
 RADC combines **Reliability-Aware Temporal Aggregation (RATA)** and **Content-Adaptive Dynamic Convolution (CADC)** to refine temporal features using reliable motion cues.
 
-<p align="center">
-  <img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="640">
-</p>
-
-<p align="center"><strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.</p>
-
-<p align="center">
-  <img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="680">
-</p>
-
-<p align="center"><strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.</p>
+<table align="center">
+  <tr>
+    <td align="center" valign="middle" width="50%"><img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="460"></td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.</td>
+    <td align="center" valign="top"><strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.</td>
+  </tr>
+</table>
 
 ### Motion-guided Adaptive Gating (MAG)
 
 <p align="center">
-  <img src="assets/mag_tmm.png" alt="Figure 5: Motion-guided Adaptive Gating" width="800">
+  <img src="assets/mag_tmm.png" alt="Figure 5: Motion-guided Adaptive Gating" width="460">
 </p>
 
 <p align="center"><strong>Figure 5.</strong> MAG uses inter-frame differences to guide adaptive fusion of spatial and temporal features.</p>
@@ -103,36 +101,6 @@ Table III reports full-pipeline efficiency, including background alignment and i
 | TDCNet | 2.90 | 40.46M | 3822.91 |
 | DeepDIG | **9.15** | 15.21M | **33.14** |
 
-### Background alignment
-
-<p align="center">
-  <img src="assets/alignment_analysis_tmm.png" alt="Figure 9: alignment success rate and pairwise alignment time" width="740">
-</p>
-
-<p align="center"><strong>Figure 9.</strong> DeepDIG achieves <strong>100% alignment success</strong> at the three tested synthetic homography levels on LMIRSTD, with <strong>5.54 ms per image pair</strong>.</p>
-
-Table IV compares alignment methods on **IRDST**, with RADC and MAG retained:
-
-| Method | Pd ↑ | Fa ↓ | IoU ↑ | nIoU ↑ | F1 ↑ |
-|---|---:|---:|---:|---:|---:|
-| DeepDIG (SIFT + RADC + MAG) | 96.88 | 73.58 | 54.22 | 62.35 | 95.64 |
-| DeepDIG (GIM + RADC + MAG) | 98.80 | **12.55** | 61.40 | 63.82 | **98.27** |
-| DeepDIG (DBA + RADC + MAG) | **98.92** | 14.67 | **63.26** | **66.04** | 98.17 |
-
-### Feature analysis
-
-<p align="center">
-  <img src="assets/feature_visualization_tmm.png" alt="Figure 12: intermediate features from RADC and MAG" width="760">
-</p>
-
-<p align="center"><strong>Figure 12.</strong> Intermediate features from the static path, difference map, RADC and MAG; green boxes mark true targets.</p>
-
-<p align="center">
-  <img src="assets/rata_comparison_tmm.png" alt="Figure 13: uniform accumulation versus RATA" width="760">
-</p>
-
-<p align="center"><strong>Figure 13.</strong> Uniform difference-map accumulation compared with RATA; green boxes mark true targets.</p>
-
 ## Installation and checkpoints
 
 Download the three complete DeepDIG checkpoints from the [Google Drive weights folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1):
@@ -167,21 +135,3 @@ python test_deepdig.py --dataset IRDST --root ./dataset \
 ```
 
 This evaluates the full test split and saves `results.json` and `results.txt` to `results/IRDST/`; for another dataset, change the dataset name, checkpoint and output directory while keeping 20 frames and batch size 2.
-
-## Source map
-
-<details>
-<summary>Model components and source files</summary>
-
-| Component | Source |
-|---|---|
-| Complete model | [deep_dig.py](model/deep_dig.py) |
-| Static path and descriptor head | [static_path.py](model/static_path.py), [UNet_CBAM.py](model/UNet_CBAM.py) |
-| DBA and frame alignment | [DBA_module.py](model/DBA_module.py), [frame_cache.py](model/frame_cache.py) |
-| Difference path | [difference_path.py](model/difference_path.py) |
-| RADC (RATA and CADC) | [RADC_module.py](model/RADC_module.py) |
-| Dynamic feature encoder | [dynamic_path.py](model/dynamic_path.py) |
-| MAG | [MAG_module.py](model/MAG_module.py) |
-| Detection head | [detection_network.py](model/detection_network.py) |
-
-</details>
