@@ -5,16 +5,18 @@ DeepDIG detects infrared small targets in moving-camera video through background
 This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints. Figures and results below are from the paper; please refer to it for method details.
 
 <p align="center">
-  <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="760">
+  <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="600">
 </p>
+
+<p align="center"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</p>
 
 ## Method
 
 <p align="center">
-  <img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="1000">
+  <img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="640">
 </p>
 
-DeepDIG aligns historical frames to the current frame and combines static, difference and dynamic features for target detection.
+<p align="center"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</p>
 
 ### Deep Background Alignment (DBA)
 
@@ -24,34 +26,25 @@ DBA reuses static-encoder features to construct deep descriptors for cross-frame
 
 RADC combines **Reliability-Aware Temporal Aggregation (RATA)** and **Content-Adaptive Dynamic Convolution (CADC)** to refine temporal features using reliable motion cues.
 
-<table align="center">
-  <tr><th>RATA (Figure 3)</th><th>CADC (Figure 4)</th></tr>
-  <tr>
-    <td><img src="assets/rata_tmm.png" alt="Regional and pixel-wise reliability gates in RATA" width="460"></td>
-    <td><img src="assets/cadc_tmm.png" alt="Motion-conditioned dynamic kernel generation in CADC" width="460"></td>
-  </tr>
-</table>
+<p align="center">
+  <img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="640">
+</p>
+
+<p align="center"><strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.</p>
+
+<p align="center">
+  <img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="680">
+</p>
+
+<p align="center"><strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.</p>
 
 ### Motion-guided Adaptive Gating (MAG)
 
-MAG uses inter-frame differences to guide adaptive fusion of spatial and temporal features.
-
 <p align="center">
-  <img src="assets/mag_tmm.png" alt="Figure 5: Motion-guided Adaptive Gating" width="850">
+  <img src="assets/mag_tmm.png" alt="Figure 5: Motion-guided Adaptive Gating" width="800">
 </p>
 
-### Source map
-
-| Component | Source |
-|---|---|
-| Complete model | [deep_dig.py](model/deep_dig.py) |
-| Static path and descriptor head | [static_path.py](model/static_path.py), [UNet_CBAM.py](model/UNet_CBAM.py) |
-| DBA and frame alignment | [DBA_module.py](model/DBA_module.py), [frame_cache.py](model/frame_cache.py) |
-| Difference path | [difference_path.py](model/difference_path.py) |
-| RADC (RATA and CADC) | [RADC_module.py](model/RADC_module.py) |
-| Dynamic feature encoder | [dynamic_path.py](model/dynamic_path.py) |
-| MAG | [MAG_module.py](model/MAG_module.py) |
-| Detection head | [detection_network.py](model/detection_network.py) |
+<p align="center"><strong>Figure 5.</strong> MAG uses inter-frame differences to guide adaptive fusion of spatial and temporal features.</p>
 
 ## LMIRSTD Dataset
 
@@ -60,14 +53,16 @@ The **Large-motion Multi-frame IRST Detection (LMIRSTD)** dataset contains **60 
 LMIRSTD features pronounced background motion and dim targets, with mean SCR **2.25**. Small, medium and large targets account for **32.0%, 50.6% and 17.4%**, respectively.
 
 <p align="center">
-  <img src="assets/dataset_tmm.png" alt="Figure 6: typical LMIRSTD backgrounds; green boxes indicate true targets" width="1000">
+  <img src="assets/dataset_tmm.png" alt="Figure 6: typical LMIRSTD backgrounds; green boxes indicate true targets" width="900">
 </p>
+
+<p align="center"><strong>Figure 6.</strong> Representative LMIRSTD backgrounds, with true targets marked by green boxes.</p>
 
 <p align="center">
-  <img src="assets/panorama_tmm.png" alt="Figure 7: panoramas stitched from 50 consecutive LMIRSTD frames" width="1000">
+  <img src="assets/panorama_tmm.png" alt="Figure 7: panoramas stitched from 50 consecutive LMIRSTD frames" width="900">
 </p>
 
-Panoramas use **50 consecutive frames**; red boxes mark individual 640×512 frames.
+<p align="center"><strong>Figure 7.</strong> Panoramas stitched from 50 consecutive LMIRSTD frames; red boxes mark individual 640×512 frames.</p>
 
 Table I reports normalized inter-frame background displacement (NIBD): mean displacement of a 20×20 grid under the estimated background similarity transform, as a percentage of the image diagonal. P50/P95 are the median/95th percentile over accepted adjacent-frame pairs; screening coverage is the fraction passing geometric checks.
 
@@ -83,19 +78,19 @@ Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folder
 
 ### Quantitative comparison
 
-Table II compares methods on IRDST, TSIRMT and LMIRSTD. **Fa is in units of $10^{-6}$; all other metrics are percentages.**
-
 <p align="center">
   <img src="assets/results_tmm.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
 </p>
 
+<p align="center"><strong>Table II.</strong> Quantitative comparison on IRDST, TSIRMT and LMIRSTD; Fa is in units of 10<sup>−6</sup>, and all other metrics are percentages.</p>
+
 ### Qualitative comparison
 
 <p align="center">
-  <img src="assets/comparison_tmm.png" alt="Figure 8: eight qualitative examples comparing DeepDIG with representative methods" width="1000">
+  <img src="assets/comparison_tmm.png" alt="Figure 8: eight qualitative examples comparing DeepDIG with representative methods" width="100%">
 </p>
 
-Red, blue and yellow boxes mark correct detections, missed targets and false alarms, respectively.
+<p align="center"><strong>Figure 8.</strong> Qualitative comparison: red, blue and yellow boxes mark correct detections, missed targets and false alarms, respectively.</p>
 
 ### Efficiency
 
@@ -110,11 +105,11 @@ Table III reports full-pipeline efficiency, including background alignment and i
 
 ### Background alignment
 
-Figure 9 reports **100% alignment success** for DeepDIG under the three tested synthetic homography levels on LMIRSTD and **5.54 ms per image pair**.
-
 <p align="center">
-  <img src="assets/alignment_analysis_tmm.png" alt="Figure 9: alignment success rate and pairwise alignment time" width="900">
+  <img src="assets/alignment_analysis_tmm.png" alt="Figure 9: alignment success rate and pairwise alignment time" width="740">
 </p>
+
+<p align="center"><strong>Figure 9.</strong> DeepDIG achieves <strong>100% alignment success</strong> at the three tested synthetic homography levels on LMIRSTD, with <strong>5.54 ms per image pair</strong>.</p>
 
 Table IV compares alignment methods on **IRDST**, with RADC and MAG retained:
 
@@ -124,21 +119,19 @@ Table IV compares alignment methods on **IRDST**, with RADC and MAG retained:
 | DeepDIG (GIM + RADC + MAG) | 98.80 | **12.55** | 61.40 | 63.82 | **98.27** |
 | DeepDIG (DBA + RADC + MAG) | **98.92** | 14.67 | **63.26** | **66.04** | 98.17 |
 
-### Sensitivity and feature analysis
-
-The IRDST sensitivity experiments select **N=20**, **α=0.5**, **K=40** and a **3×3** kernel among the tested settings.
+### Feature analysis
 
 <p align="center">
-  <img src="assets/sensitivity_temporal_tmm.png" alt="Figure 10: sensitivity to temporal window length and residual-gate scaling" width="900">
-  <img src="assets/sensitivity_kernel_tmm.png" alt="Figure 11: sensitivity to Top-K pooling and dynamic-kernel size" width="900">
+  <img src="assets/feature_visualization_tmm.png" alt="Figure 12: intermediate features from RADC and MAG" width="760">
 </p>
 
-Figures 12–13 show intermediate features and compare uniform accumulation with RATA. Green boxes mark true targets.
+<p align="center"><strong>Figure 12.</strong> Intermediate features from the static path, difference map, RADC and MAG; green boxes mark true targets.</p>
 
 <p align="center">
-  <img src="assets/feature_visualization_tmm.png" alt="Figure 12: intermediate features from RADC and MAG" width="950">
-  <img src="assets/rata_comparison_tmm.png" alt="Figure 13: uniform accumulation versus RATA" width="950">
+  <img src="assets/rata_comparison_tmm.png" alt="Figure 13: uniform accumulation versus RATA" width="760">
 </p>
+
+<p align="center"><strong>Figure 13.</strong> Uniform difference-map accumulation compared with RATA; green boxes mark true targets.</p>
 
 ## Installation and checkpoints
 
@@ -162,3 +155,33 @@ pip install -r requirements.txt
 ```
 
 For CPU, use `pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu` instead. Optional `--profile` requires `thop`, which is not needed for inference or evaluation.
+
+## Test
+
+From the repository root, with IRDST in `dataset/IRDST/` and its checkpoint in `weights/`, run:
+
+```bash
+python test_deepdig.py --dataset IRDST --root ./dataset \
+  --ckpt ./weights/DeepDIG_IRDST.pth --in_channels 20 --test_batch_size 2 \
+  --output_dir ./results/IRDST
+```
+
+This evaluates the full test split and saves `results.json` and `results.txt` to `results/IRDST/`; for another dataset, change the dataset name, checkpoint and output directory while keeping 20 frames and batch size 2.
+
+## Source map
+
+<details>
+<summary>Model components and source files</summary>
+
+| Component | Source |
+|---|---|
+| Complete model | [deep_dig.py](model/deep_dig.py) |
+| Static path and descriptor head | [static_path.py](model/static_path.py), [UNet_CBAM.py](model/UNet_CBAM.py) |
+| DBA and frame alignment | [DBA_module.py](model/DBA_module.py), [frame_cache.py](model/frame_cache.py) |
+| Difference path | [difference_path.py](model/difference_path.py) |
+| RADC (RATA and CADC) | [RADC_module.py](model/RADC_module.py) |
+| Dynamic feature encoder | [dynamic_path.py](model/dynamic_path.py) |
+| MAG | [MAG_module.py](model/MAG_module.py) |
+| Detection head | [detection_network.py](model/detection_network.py) |
+
+</details>
