@@ -62,13 +62,13 @@ LMIRSTD features pronounced background motion and dim targets, with mean SCR **2
 
 <p align="center"><strong>Figure 7.</strong> Panoramas stitched from 50 consecutive LMIRSTD frames; red boxes mark individual 640×512 frames.</p>
 
-Table I reports normalized inter-frame background displacement (NIBD): mean displacement of a 20×20 grid under the estimated background similarity transform, as a percentage of the image diagonal. P50/P95 are the median/95th percentile over accepted adjacent-frame pairs; screening coverage is the fraction passing geometric checks.
+Table I compares multi-frame IRST detection datasets.
 
-| Dataset | Mean SCR | Background motion | NIBD P50 (% diagonal/frame) | NIBD P95 (% diagonal/frame) | Screening coverage (%) |
-|---|---:|---|---:|---:|---:|
-| IRDST | 6.70 | Large | 0.144 | 3.713 | 71.65 |
-| TSIRMT | 3.04 | Mild | 0.460 | 0.918 | 99.50 |
-| LMIRSTD | 2.25 | Large | 0.329 | 1.020 | 96.71 |
+| Dataset | Mean SCR | Motion Mag. |
+|---|---:|---:|
+| IRDST | 6.70 | 40.17 pixels |
+| TSIRMT | 3.04 | 17.69 pixels |
+| LMIRSTD | 2.25 | 60.44 pixels |
 
 Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0).
 
