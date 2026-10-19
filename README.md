@@ -70,6 +70,9 @@ Table I compares multi-frame IRST detection datasets.
 | TSIRMT | 3.04 | 17.69 pixels |
 | LMIRSTD | 2.25 | 60.44 pixels |
 
+- **Mean SCR**: mean signal-to-clutter ratio, indicating target contrast relative to background clutter; lower values indicate less salient targets.
+- **Motion Mag.**: mean pixel displacement of the background between the two frames exhibiting the largest inter-frame motion within each temporal window.
+
 Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0).
 
 ## Paper Results
