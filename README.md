@@ -6,16 +6,15 @@ This repository provides the **DBA + RADC + MAG** model, evaluation code and pre
 
 ## Method
 
-<table align="center">
-  <tr>
-    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="460"></td>
-    <td align="center" valign="middle" width="50%"><img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="460"></td>
-  </tr>
-  <tr>
-    <td align="center" valign="top"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</td>
-    <td align="center" valign="top"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</td>
-  </tr>
-</table>
+<p align="center">
+  <img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="49%">
+  <img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="49%">
+</p>
+
+<p align="center">
+  <strong>Figure 1.</strong> Frame differences and feature responses under background motion.<br>
+  <strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.
+</p>
 
 ### Deep Background Alignment (DBA)
 
@@ -25,16 +24,15 @@ DBA reuses static-encoder features to construct deep descriptors for cross-frame
 
 RADC combines **Reliability-Aware Temporal Aggregation (RATA)** and **Content-Adaptive Dynamic Convolution (CADC)** to refine temporal features using reliable motion cues.
 
-<table align="center">
-  <tr>
-    <td align="center" valign="middle" width="50%"><img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="460"></td>
-    <td align="center" valign="middle" width="50%"><img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="460"></td>
-  </tr>
-  <tr>
-    <td align="center" valign="top"><strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.</td>
-    <td align="center" valign="top"><strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.</td>
-  </tr>
-</table>
+<p align="center">
+  <img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="49%">
+  <img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="49%">
+</p>
+
+<p align="center">
+  <strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.<br>
+  <strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.
+</p>
 
 ### Motion-guided Adaptive Gating (MAG)
 
@@ -62,7 +60,7 @@ LMIRSTD features pronounced background motion and dim targets, with mean SCR **2
 
 <p align="center"><strong>Figure 7.</strong> Panoramas stitched from 50 consecutive LMIRSTD frames; red boxes mark individual 640×512 frames.</p>
 
-Table I compares multi-frame IRST detection datasets.
+**Table I** compares multi-frame IRST detection datasets.
 
 | Dataset | Mean SCR | Motion Mag. |
 |---|---:|---:|
