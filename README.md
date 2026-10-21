@@ -1,5 +1,13 @@
 <h1 align="center">DeepDIG: Deep Background Alignment Helps See Infrared Small Target Better</h1>
 
+<p align="center">
+  <a href="#method">Method</a> · <a href="#lmirstd-dataset">Dataset</a> · <a href="#paper-results">Results</a> · <a href="#installation-and-checkpoints">Installation</a> · <a href="#test">Test</a>
+</p>
+
+<p align="center">
+  Download: <a href="https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0">LMIRSTD dataset</a> · <a href="https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1">Pretrained checkpoints</a>
+</p>
+
 DeepDIG detects infrared small targets in moving-camera video through background alignment and spatiotemporal modeling.
 
 This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints. Figures and results below are from the paper; please refer to it for method details.
@@ -8,12 +16,12 @@ This repository provides the **DBA + RADC + MAG** model, evaluation code and pre
 
 <table align="center">
   <tr>
-    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="460"></td>
-    <td align="center" valign="middle" width="50%"><img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_readme.png" alt="Figure 1: frame differences and feature responses under background motion" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/architecture_readme.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="460"></td>
   </tr>
   <tr>
     <td align="center" valign="top"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</td>
-    <td align="center" valign="top"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</td>
+    <td align="center" valign="top"><strong>Figure 2.</strong> DeepDIG architecture for background alignment and spatiotemporal detection.</td>
   </tr>
 </table>
 
@@ -27,12 +35,12 @@ RADC combines **Reliability-Aware Temporal Aggregation (RATA)** and **Content-Ad
 
 <table align="center">
   <tr>
-    <td align="center" valign="middle" width="50%"><img src="assets/rata_tmm.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="460"></td>
-    <td align="center" valign="middle" width="50%"><img src="assets/cadc_tmm.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/rata_readme.png" alt="Figure 3: regional and pixel-wise reliability gates in RATA" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/cadc_readme.png" alt="Figure 4: motion-conditioned dynamic kernel generation in CADC" width="460"></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><strong>Figure 3.</strong> RATA weights temporal differences using regional reliability and pixel-wise discriminability.</td>
-    <td align="center" valign="top"><strong>Figure 4.</strong> CADC generates spatially adaptive dynamic kernels from accumulated motion cues.</td>
+    <td align="center" valign="top"><strong>Figure 3.</strong> RATA aggregates temporal differences using regional reliability and pixel-wise discriminability.</td>
+    <td align="center" valign="top"><strong>Figure 4.</strong> CADC generates adaptive dynamic kernels from accumulated motion cues.</td>
   </tr>
 </table>
 
@@ -62,16 +70,16 @@ LMIRSTD features pronounced background motion and dim targets, with mean SCR **2
 
 <p align="center"><strong>Figure 7.</strong> Panoramas stitched from 50 consecutive LMIRSTD frames; red boxes mark individual 640×512 frames.</p>
 
-**Table I** compares multi-frame IRST detection datasets.
+**Table I.** Comparison of multi-frame IRST detection datasets.
 
-| Dataset | Mean SCR | Motion Mag. |
+| Dataset | Mean SCR | Motion magnitude (pixels) |
 |---|---:|---:|
-| IRDST | 6.70 | 40.17 pixels |
-| TSIRMT | 3.04 | 17.69 pixels |
-| LMIRSTD | 2.25 | 60.44 pixels |
+| IRDST | 6.70 | 40.17 |
+| TSIRMT | 3.04 | 17.69 |
+| LMIRSTD | 2.25 | 60.44 |
 
 - **Mean SCR**: mean signal-to-clutter ratio, indicating target contrast relative to background clutter; lower values indicate less salient targets.
-- **Motion Mag.**: mean pixel displacement of the background between the two frames exhibiting the largest inter-frame motion within each temporal window.
+- **Motion magnitude**: mean pixel displacement of the background between the two frames exhibiting the largest inter-frame motion within each temporal window.
 
 Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folders/1dp31_tDtGXmNUhTHD_0GqEGBLAVNUYb0).
 
@@ -79,11 +87,15 @@ Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folder
 
 ### Quantitative comparison
 
-<p align="center">
-  <img src="assets/results_tmm.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
-</p>
+**Table II.** Results of the complete DeepDIG model (DBA + RADC + MAG) on three datasets. Fa is in units of 10<sup>−6</sup>; all other metrics are percentages.
 
-<p align="center"><strong>Table II.</strong> Quantitative comparison on IRDST, TSIRMT and LMIRSTD; Fa is in units of 10<sup>−6</sup>, and all other metrics are percentages.</p>
+| Dataset | Pd ↑ | Fa ↓ | IoU ↑ | nIoU ↑ | F1 ↑ |
+|---|---:|---:|---:|---:|---:|
+| IRDST | 98.92 | 14.67 | 63.26 | 66.04 | 98.17 |
+| TSIRMT | 92.66 | 35.55 | 73.09 | 73.11 | 94.72 |
+| LMIRSTD | 91.24 | 1.87 | 80.66 | 74.80 | 89.76 |
+
+[View the full comparison table at original resolution](assets/results_tmm.png).
 
 ### Qualitative comparison
 
@@ -95,7 +107,7 @@ Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folder
 
 ### Efficiency
 
-Table III reports full-pipeline efficiency, including background alignment and inference, at **256×256** resolution on an **NVIDIA RTX 4090D**.
+**Table III.** Full-pipeline efficiency, including background alignment and inference, at **256×256** resolution on an **NVIDIA RTX 4090D**.
 
 | Method | FPS ↑ | Parameters | GFLOPs |
 |---|---:|---:|---:|
@@ -119,6 +131,9 @@ Place them in the ignored `weights/` directory and pass the actual path through 
 Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the validation environment. Install the appropriate PyTorch build first:
 
 ```bash
+git clone https://github.com/DeepDIG2026/DeepDIG.git
+cd DeepDIG
+
 conda create -n deepdig python=3.10
 conda activate deepdig
 pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu126
