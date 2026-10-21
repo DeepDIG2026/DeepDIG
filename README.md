@@ -97,10 +97,10 @@ Table III reports full-pipeline efficiency, including background alignment and i
 
 | Method | FPS ↑ | Parameters | GFLOPs |
 |---|---:|---:|---:|
-| STDMANet | 4.37 | **11.88M** | 62.98 |
+| STDMANet | 4.37 | 11.88M | 62.98 |
 | LMAFormer | 0.65 | 407.67M | 615.96 |
 | TDCNet | 2.90 | 40.46M | 3822.91 |
-| DeepDIG | **9.15** | 15.21M | **33.14** |
+| DeepDIG | 9.15 | 15.21M | 33.14 |
 
 ## Installation and checkpoints
 
