@@ -104,19 +104,9 @@ Table III reports full-pipeline efficiency, including background alignment and i
 | TDCNet | 2.90 | 40.46M | 3822.91 |
 | DeepDIG | 9.15 | 15.21M | 33.14 |
 
-## Installation and checkpoints
+## Installation
 
-Download the three complete DeepDIG checkpoints from the [Google Drive weights folder](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1):
-
-| Dataset | Filename |
-|---|---|
-| IRDST | `DeepDIG_IRDST.pth` |
-| TSIRMT | `DeepDIG_TSIRMT.pth` |
-| LMIRSTD | `DeepDIG_LMIRSTD.pth` |
-
-Place them in the ignored `weights/` directory and pass the actual path through `--ckpt`. A complete checkpoint contains the descriptor branch, so no additional first-stage XFeat checkpoint or GIM/SIFT dependency is needed. The checkpoint loader accepts a pure state dictionary or a checkpoint containing `state_dict`, removes an optional `module.` prefix, automatically maps published checkpoint keys to the RADC module names, and loads **strictly**. Explicitly labelled pipeline checkpoints must be `full`. Use the full configuration with 20 frames and 3×3 dynamic kernels. Checkpoints must match the published network structure.
-
-Reference validation environment: Linux, Python 3.10, PyTorch 2.6.0+cu126. Runtime versions in `requirements.txt` match the validation environment. Install the appropriate PyTorch build first:
+Environment: Python 3.10 and PyTorch 2.6.0 (CUDA 12.6).
 
 ```bash
 conda create -n deepdig python=3.10
@@ -125,11 +115,19 @@ pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu126
 pip install -r requirements.txt
 ```
 
-For CPU, use `pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu` instead. Optional `--profile` requires `thop`, which is not needed for inference or evaluation.
+## Pretrained checkpoints
+
+Download the checkpoints from [Google Drive](https://drive.google.com/drive/folders/1duJ4M6fwDdcLkgSOd1911EqphCNk4BV1) and place them in `weights/`.
+
+| Dataset | Filename |
+|---|---|
+| IRDST | `DeepDIG_IRDST.pth` |
+| TSIRMT | `DeepDIG_TSIRMT.pth` |
+| LMIRSTD | `DeepDIG_LMIRSTD.pth` |
 
 ## Test
 
-From the repository root, with IRDST in `dataset/IRDST/` and its checkpoint in `weights/`, run:
+Place IRDST in `dataset/IRDST/` and run from the repository root:
 
 ```bash
 python test_deepdig.py --dataset IRDST --root ./dataset \
@@ -137,4 +135,4 @@ python test_deepdig.py --dataset IRDST --root ./dataset \
   --output_dir ./results/IRDST
 ```
 
-This evaluates the full test split and saves `results.json` and `results.txt` to `results/IRDST/`; for another dataset, change the dataset name, checkpoint and output directory while keeping 20 frames and batch size 2.
+Results are saved to `results/IRDST/`. For TSIRMT or LMIRSTD, change `--dataset`, `--ckpt` and `--output_dir` accordingly.
