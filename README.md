@@ -80,7 +80,7 @@ Download LMIRSTD from the [dataset folder](https://drive.google.com/drive/folder
 ### Quantitative comparison
 
 <p align="center">
-  <img src="assets/results_tmm.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
+  <img src="assets/results_tmm_20261022.png" alt="Table II: quantitative comparison on IRDST, TSIRMT and LMIRSTD" width="100%">
 </p>
 
 <p align="center"><strong>Table II.</strong> Quantitative comparison on IRDST, TSIRMT and LMIRSTD; Fa is in units of 10<sup>−6</sup>, and all other metrics are percentages.</p>
