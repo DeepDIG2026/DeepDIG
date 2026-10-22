@@ -2,7 +2,7 @@
 
 DeepDIG detects infrared small targets in moving-camera video through background alignment and spatiotemporal modeling.
 
-This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints. Figures and results below are from the paper; please refer to it for method details.
+This repository provides the **DBA + RADC + MAG** model, evaluation code and pretrained checkpoints.
 
 ## Method
 
@@ -127,12 +127,12 @@ Download the checkpoints from [Google Drive](https://drive.google.com/drive/fold
 
 ## Test
 
-Place IRDST in `dataset/IRDST/` and run from the repository root:
+Place LMIRSTD in `dataset/LMIRSTD/` and run from the repository root:
 
 ```bash
-python test_deepdig.py --dataset IRDST --root ./dataset \
-  --ckpt ./weights/DeepDIG_IRDST.pth --in_channels 20 --test_batch_size 2 \
-  --output_dir ./results/IRDST
+python test_deepdig.py --dataset LMIRSTD --root ./dataset \
+  --ckpt ./weights/DeepDIG_LMIRSTD.pth --in_channels 20 --test_batch_size 2 \
+  --output_dir ./results/LMIRSTD
 ```
 
-Results are saved to `results/IRDST/`. For TSIRMT or LMIRSTD, change `--dataset`, `--ckpt` and `--output_dir` accordingly.
+Results are saved to `results/LMIRSTD/`. For IRDST or TSIRMT, change `--dataset`, `--ckpt` and `--output_dir` accordingly.
