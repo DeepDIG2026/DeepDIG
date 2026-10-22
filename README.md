@@ -8,11 +8,11 @@ This repository provides the **DBA + RADC + MAG** model, evaluation code and pre
 
 <table align="center">
   <tr>
-    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_tmm.png" alt="Figure 1: frame differences and feature responses under background motion" width="460"></td>
+    <td align="center" valign="middle" width="50%"><img src="assets/alignment_example_tmm.png" alt="Figure 1: absolute frame differences before and after background alignment on LMIRSTD" width="460"></td>
     <td align="center" valign="middle" width="50%"><img src="assets/architecture_tmm.png" alt="Figure 2: DeepDIG architecture with static, DBA, difference and dynamic paths" width="460"></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><strong>Figure 1.</strong> Frame differences and feature responses under background motion.</td>
+    <td align="center" valign="top"><strong>Figure 1.</strong> Qualitative comparison of background alignment on LMIRSTD.</td>
     <td align="center" valign="top"><strong>Figure 2.</strong> DeepDIG aligns historical frames and combines static, difference and dynamic features for detection.</td>
   </tr>
 </table>

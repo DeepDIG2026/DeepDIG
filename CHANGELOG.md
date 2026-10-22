@@ -86,3 +86,14 @@ Align the project presentation with the supplied TMM manuscript. Public results 
 | `CHANGELOG.md` | No record of this presentation revision. | Records each updated file and its paper source. |
 
 All new figure assets are direct crops of the supplied PDF. Existing architecture, RATA, CADC, MAG and dataset illustrations are retained. Source edits affect only comments and docstrings: computational ASTs, checkpoint keys, model defaults, `test_deepdig.py`, `utils/metric.py`, data loading and dependencies are unchanged. Validation checks Python parsing, executable-AST equality, README local links, paper table values, figure crop boundaries and `git diff --check`.
+
+## Manuscript data synchronization (2026-10-22)
+
+Use the supplied latest TMM manuscript as the source for reported results.
+
+- Replace `assets/results_tmm.png` with a direct 300-dpi crop of the complete Table II on page 7, preserving all methods, datasets, ablations and the paper's emphasis.
+- Update the complete-model IRDST results from Pd 98.92, Fa 14.67, IoU 63.26, nIoU 66.04 and F1 98.17 to Pd 99.40, Fa 8.35, IoU 65.90, nIoU 66.69 and F1 98.87. Update TSIRMT Fa from 35.55 to 35.58. The other complete-model TSIRMT results and the LMIRSTD results are unchanged. Fa is reported in units of 10^-6; the other metrics are percentages.
+- Align the Figure 1 caption and alternative text with the paper's background-alignment comparison: the displayed responses are absolute frame differences, rather than intermediate feature responses.
+- Check the Table I dataset comparison, LMIRSTD statistics, Table III efficiency values and existing illustrations against the latest manuscript; retain their current presentation. Preserve the two-column figure grids, full Table II image and concise installation/checkpoint/test instructions.
+
+This is a manuscript presentation update, not a new inference or benchmark run. Model code, evaluation settings, dependencies and checkpoint download links are unchanged.
